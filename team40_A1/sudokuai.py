@@ -19,37 +19,36 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     # N.B. This is a very naive implementation.
     def compute_best_move(self, game_state: GameState) -> None:
-        #Get the standard needed variables
+
+        # Get the standard needed variables
         N = game_state.board.N
         n = game_state.board.n
         m = game_state.board.m
 
-        #make a 2d matrix representation
+        # make a 2d matrix representation
         matrix = np.reshape(np.array(game_state.board.squares), (N,N))
 
-        #Make a list of all the squares that have not yet been filled in
+        # Make a list of all the squares that have not yet been filled in
         open_squares = [(i,j) for i in range(N) for j in range(N) if game_state.board.get(i, j) == SudokuBoard.empty]
 
-        #check which values are allowed for the given move, return a list of all possible values for that coordinate
+        # check which values are allowed for the given move, return a list of all possible values for that coordinate
         def possible(i, j):
-
-            #caluclate subsquares and prepare list of possible values
+            # caluclate subsquares and prepare list of possible values
             possible_values = list(range(1, N+1))        # This list wil eventually contain all the values possible on coördinate (i,j)
-            (p, q) = (np.int(np.ceil((i + 1) / n) * n)-1, np.int(np.ceil((j + 1) / m) * m)-1)   #calculates the lowest coordinates in sub-square
-            (r, s) = (p-(n-1),q-(m-1))                                                          #calculates the highest coordinates in the sub-square
+            (p, q) = (np.int(np.ceil((i + 1) / n) * n)-1, np.int(np.ceil((j + 1) / m) * m)-1)   # calculates the lowest coordinates in sub-square
+            (r, s) = (p-(n-1),q-(m-1))                                                          # calculates the highest coordinates in the sub-square
 
-            #make list of all values in row/column and box
-            row_vals = np.unique(matrix[i,:])
-            col_vals = np.unique(matrix[:,j])
+            # make list of all values in row/column and box
+            row_vals = np.unique(matrix[i, :])
+            col_vals = np.unique(matrix[:, j])
             box_vals = np.unique(matrix[r:p, s:q])
             all_values = np.concatenate((row_vals, col_vals, box_vals), axis=None)
 
-            #remove all values in row/column/box from the list of possible values and return it
+            # remove all values in row/column/box from the list of possible values and return it
             values_left = [x for x in possible_values if x not in np.unique(all_values)]
             return values_left
 
-
-        #This loop concatenates all open coordinate squares with all possible values that it can fill in there
+        # This loop concatenates all open coordinate squares with all possible values that it can fill in there
         all_moves = []
         for coords in open_squares:
             possibilities_list = possible(coords[0], coords[1])
@@ -62,11 +61,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         print("These are all the possible moves: ")
         for item in all_moves:
             print(item)
-
         print("amount of taboo_moves: ", len(game_state.taboo_moves))
 
         move = random.choice(all_moves)
         self.propose_move(move)
+
+        # evaluate_board(game_state.initial_board)
         while True:
             time.sleep(0.2)
             self.propose_move(random.choice(all_moves))

@@ -68,9 +68,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # input a board game-state
         def evaluate_board(board: SudokuBoard):
-            final_score = 0     #This value will be the final score for the board evaluation, all subroutines add or subtract from this score
+            final_score = 0     # This value will be the final score for the board evaluation, all subroutines add or subtract from this score
 
-            #These loops increase the evaluation score for each row/column that has one place left to fill in (it can increase our score)
+            # calculate
+            # These loops increase the evaluation score for each row/column that has one place left to fill in (it can increase our score)
             for i in range(N):
                 row_counter = 0
                 column_counter = 0
@@ -84,20 +85,18 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 if column_counter == 1:
                     final_score = final_score+1
 
-
-            #calculate box_scores
-            #create all the subsquares
+            # calculate box_scores
+            # create all the subsquares
             subsquares = [[matrix[j][i] for j in range(x, x + m) for i in range(y, y + n)] for x in range(0, N, m)for y in range(0, N, n)]
             for i in range(len(subsquares)):
 
                 if subsquares[i].count(0) == 1:
                     final_score = final_score+1
 
+            return final_score
 
-            print(game_state.scores)
-            print("this is the score for the initial board: ", final_score)
-
-        evaluate_board(game_state.initial_board)
+        evaluation_score = evaluate_board(game_state.board)     # This doesnt really matter as it uses the predefined matrix to calculate stuff
+        
         while True:
             time.sleep(0.2)
             self.propose_move(random.choice(all_moves))

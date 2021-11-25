@@ -9,6 +9,8 @@ import copy
 import numpy as np
 import competitive_sudoku.sudokuai
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove, print_board
+from functools import reduce
+from operator import mul
 
 
 
@@ -36,15 +38,16 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         n = game_state.board.n          # number of rows in a block
         m = game_state.board.m          # number of columns in a block
 
+
         # Make a list of all the squares that have not yet been filled in
         open_squares = [(i,j) for i in range(N) for j in range(N) if game_state.board.get(i, j) == SudokuBoard.empty]
 
         def convert_to_matrix(board: SudokuBoard):
             """
             @param board: A sudoku board.
-            @Return: a 2 array of the given board
+            @Return: a 2D array of the given board
             """
-            matrix = np.reshape(np.array(board.squares), (N, N))
+            matrix = np.reshape(np.array(N, N))
             return matrix
 
         def possible(board: SudokuBoard):
@@ -59,7 +62,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 # calculate sub-squares and prepare list of possible values
                 possible_values = list(range(1, N+1))        # This list wil eventually contain all the values possible on coordinate (i,j)
                 (p, q) = (np.int(np.ceil((coords[0] + 1) / n) * n)-1, np.int(np.ceil((coords[1] + 1) / m) * m)-1)   # calculates the highest coordinates in the sub-square
-                (r, s) = (p-(n-1),q-(m-1))                                                          # calculates the lowest coordinates in the sub-square
+                (r, s) = (p-(n-1), q-(m-1))                                                          # calculates the lowest coordinates in the sub-square
 
                 # makes a list of all values in row/column and box
                 row_vals = np.unique(matrix[coords[0], :])
@@ -127,14 +130,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             if isMaximisingPlayer:
                 value = -math.inf
+                max_value = 0
                 for move in all_moves_list:                                     #go over all possible moves our player can play
                     board.put(move.i, move.j, move.value)                       #actually play the move in the board
                     value = max(value, minimax(board, depth+1, False, board))   #recursive call to find all values after analyzing all possibles moves from opponennt (when depth==2 is used)
                                                                                 #the last board in the function call is the board with the move implented, so in else statement this board can be reseted.
-                    if depth == 0:                             #you only come here when depth ==0.
-                        self.minmaxlst.append([value,move])
-                    else:
-                        print('Cannot visit this spot as long as depth=2 is the end')
+                    if depth == 0 and value > max_value:                          #if                   #you only come here when depth ==0.
+                        max_value = value
+                        self.propose_move(move)
+
 
                     board = copy.deepcopy(game_state.board)    #reset the board to the one the game behaves now, in order to analyze the effects of the next possible move
 
@@ -148,7 +152,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     value = min(value, minimax(board2, depth + 1, True))
                 return value
 
-
         possible_moves = possible(game_state.board)
 
         board_copy = copy.deepcopy(game_state.board)
@@ -157,12 +160,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         best_moves = []
         for row in self.minmaxlst:
             if row[0] == final_move:
-                if row[1] in possible_moves:                   #last check that only moves are used that are legal
+                if row[1] in possible_moves:                   # last check that only moves are used that are legal
                     best_moves.append(row[1])
 
         next_move = random.choice(best_moves)
         self.propose_move(next_move)
-
-        # while True:
-        #     time.sleep(0.2)
-        #     self.propose_move(random.choice(final_move_list))

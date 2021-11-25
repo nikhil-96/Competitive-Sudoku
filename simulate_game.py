@@ -63,7 +63,6 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
         while move_number < number_of_moves:
             player, player_number = (player1, 1) if len(game_state.moves) % 2 == 0 else (player2, 2)
             print(f'-----------------------------\nCalculate a move for player {player_number}')
-
             player.best_move[0] = 0
             player.best_move[1] = 0
             player.best_move[2] = 0
@@ -121,11 +120,6 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
             print('Player 2 wins the game.')
 
 
-# class Object():
-#     args = Object()
-#     args.first = "blabla"
-#     pass
-
 def main():
     solve_sudoku_path = 'bin\\solve_sudoku.exe' if platform.system() == 'Windows' else 'bin/solve_sudoku'
 
@@ -141,8 +135,6 @@ def main():
         check_oracle(solve_sudoku_path)
         return
 
-
-
     board_text = '''2 2
        1   2   .   4
        .   4   .   2
@@ -153,8 +145,8 @@ def main():
         board_text = Path(args.board).read_text()
     board = load_sudoku_from_text(board_text)
 
-    module1 = importlib.import_module(args.first + '.sudokuai')
-    module2 = importlib.import_module(args.second + '.sudokuai')
+    module1 = importlib.import_module('team40_A1' + '.sudokuai')
+    module2 = importlib.import_module('random_player' + '.sudokuai')
     player1 = module1.SudokuAI()
     player2 = module2.SudokuAI()
     if args.first in ('random_player', 'greedy_player'):

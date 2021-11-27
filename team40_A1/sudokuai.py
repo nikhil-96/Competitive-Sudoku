@@ -7,6 +7,8 @@ import time
 import math
 import copy
 import numpy as np
+import math
+import array
 import competitive_sudoku.sudokuai
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove, print_board
 from functools import reduce
@@ -47,7 +49,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @param board: A sudoku board.
             @Return: a 2D array of the given board
             """
-            matrix = np.reshape(np.array(N, N))
+            matrix = [board.squares[i:i+N] for i in range(0, len(board.squares), N)]
             return matrix
 
         def possible(board: SudokuBoard):
@@ -55,27 +57,33 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @param board: A sudoku board.
             @Return: an array with all possible/legal moves in the Move format (x-coord, y-coord, value)
             """
-            matrix = convert_to_matrix(board)
+
             all_moves = []              # this will contain all the moves in the end
             for coords in open_squares:  # loop over all empty squares
 
                 # calculate sub-squares and prepare list of possible values
-                possible_values = list(range(1, N+1))        # This list wil eventually contain all the values possible on coordinate (i,j)
-                (p, q) = (np.int(np.ceil((coords[0] + 1) / n) * n)-1, np.int(np.ceil((coords[1] + 1) / m) * m)-1)   # calculates the highest coordinates in the sub-square
+                values_left = list(range(1, N+1))        # This list wil eventually contain all the values possible on coordinate (i,j)
+                (p, q) = (int(math.ceil((coords[0] + 1) / n) * n)-1, int(math.ceil((coords[1] + 1) / m) * m)-1)   # calculates the highest coordinates in the sub-square
                 (r, s) = (p-(n-1), q-(m-1))                                                          # calculates the lowest coordinates in the sub-square
 
-                # makes a list of all values in row/column and box
-                row_vals = np.unique(matrix[coords[0], :])
-                col_vals = np.unique(matrix[:, coords[1]])
-                box_vals = np.unique(matrix[r:p, s:q])
-                all_values = np.concatenate((row_vals, col_vals, box_vals), axis=None)
+                # remove all values that already exist on the same row/column/box as coords from the possible value list for that coord.
+                for i in range(N):
+                    if board.get(coords[0], i) in values_left:
+                        values_left.remove(board.get(coords[0], i))
+                    if board.get(i, coords[1]) in values_left:
+                        values_left.remove(board.get(i, coords[1]))
+                for x in range(r, p+1):
+                    for y in range(s, q+1):
+                        if board.get(x, y) in values_left:
+                            values_left.remove(board.get(x, y))
 
-                # remove all values in row/column/box from the list of possible values and return it
-                values_left = [x for x in possible_values if x not in np.unique(all_values)]
-                for x in range(len(values_left)):
-                    if TabooMove(coords[0], coords[1], values_left[x]) in game_state.taboo_moves:
-                        continue
-                    all_moves.append(Move(coords[0], coords[1], values_left[x]))
+                for value in values_left:
+                    all_moves.append(Move(coords[0], coords[1], value))
+
+            # We input all moves and then check the oracle to see which ones are illegal
+            for move in all_moves:
+                if move in game_state.taboo_moves:
+                    all_moves.remove(move)
 
             return all_moves
 
@@ -137,8 +145,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                                                                                 #the last board in the function call is the board with the move implented, so in else statement this board can be reseted.
                     if depth == 0 and value > max_value:                          #if                   #you only come here when depth ==0.
                         max_value = value
-                        self.propose_move(move)
 
+                        self.propose_move(move)
 
                     board = copy.deepcopy(game_state.board)    #reset the board to the one the game behaves now, in order to analyze the effects of the next possible move
 
@@ -152,16 +160,4 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     value = min(value, minimax(board2, depth + 1, True))
                 return value
 
-        possible_moves = possible(game_state.board)
-
-        board_copy = copy.deepcopy(game_state.board)
-        final_move = minimax(board_copy,0,True)
-
-        best_moves = []
-        for row in self.minmaxlst:
-            if row[0] == final_move:
-                if row[1] in possible_moves:                   # last check that only moves are used that are legal
-                    best_moves.append(row[1])
-
-        next_move = random.choice(best_moves)
-        self.propose_move(next_move)
+        minimax(game_state.board, 0, True)

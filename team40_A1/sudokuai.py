@@ -4,16 +4,11 @@
 
 import random
 import time
-import math
 import copy
-import numpy as np
 import math
 import array
 import competitive_sudoku.sudokuai
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove, print_board
-from functools import reduce
-from operator import mul
-
 
 
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
@@ -23,26 +18,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
-        self.minmaxlst = []
-
-
-
-
 
     # N.B. This is a very naive implementation.
     def compute_best_move(self, game_state: GameState) -> None:
 
-
-
-
         # Get the standard needed variables
-        N = game_state.board.N          # depth of matrix
-        n = game_state.board.n          # number of rows in a block
-        m = game_state.board.m          # number of columns in a block
-
+        N = game_state.board.N  # depth of matrix
+        n = game_state.board.n  # number of rows in a block
+        m = game_state.board.m  # number of columns in a block
 
         # Make a list of all the squares that have not yet been filled in
-        open_squares = [(i,j) for i in range(N) for j in range(N) if game_state.board.get(i, j) == SudokuBoard.empty]
+        open_squares = [(i, j) for i in range(N) for j in range(N) if game_state.board.get(i, j) == SudokuBoard.empty]
 
         def convert_to_matrix(board: SudokuBoard):
             """
@@ -127,30 +113,28 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @param depth: The corresponding depth within the tree.
             @param isMaximisingPlayer: True/False indicator for min/max search.
             @Return: return the best possible next move according to the minimax
-
             ONLY WORKS FOR DEPTH == 2 YET
             """
 
             if depth == 2:
-                return evaluate_board(board) #returned value: the board after the 'best' move from opponent.
+                return evaluate_board(board)  # returned value: the board after the 'best' move from opponent.
 
             all_moves_list = possible(board)
 
             if isMaximisingPlayer:
                 value = -math.inf
                 max_value = 0
-                for move in all_moves_list:                                     #go over all possible moves our player can play
-                    board.put(move.i, move.j, move.value)                       #actually play the move in the board
-                    value = max(value, minimax(board, depth+1, False, board))   #recursive call to find all values after analyzing all possibles moves from opponennt (when depth==2 is used)
-                                                                                #the last board in the function call is the board with the move implented, so in else statement this board can be reseted.
-                    if depth == 0 and value > max_value:                          #if                   #you only come here when depth ==0.
+                for move in all_moves_list:                                     # go over all possible moves our player can play
+                    board.put(move.i, move.j, move.value)                       # actually play the move in the board
+                    value = max(value, minimax(board, depth+1, False, board))   # recursive call to find all values after analyzing all possibles moves from opponent (when depth==2 is used)
+                                                                                # the last board in the function call is the board with the move implented, so in else statement this board can be reset.
+                    if depth == 0 and value > max_value:                        # you only come here when depth ==0.
                         max_value = value
-
                         self.propose_move(move)
 
-                    board = copy.deepcopy(game_state.board)    #reset the board to the one the game behaves now, in order to analyze the effects of the next possible move
+                    board = copy.deepcopy(game_state.board)    # reset the board to the one the game behaves now, in order to analyze the effects of the next possible move
 
-                return value                                   #the returned value is now the best value for you, after analyzing the opponents best responses to your moves
+                return value                                   # the returned value is now the best value for you, after analyzing the opponents best responses to your moves
 
             else:
                 value = +math.inf

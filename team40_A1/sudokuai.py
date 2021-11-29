@@ -169,7 +169,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                     alpha = max(alpha, value)
                     if beta <= alpha:
-                        break
+                        break                 #only works when we searh deeper
+                                              #so when we're more often in is isMaximisingPlayer during the recursive loops
 
                     if depth == 0 and value > value_max:
                         max_value = value

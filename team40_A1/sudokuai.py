@@ -144,4 +144,49 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     value = min(value, minimax(board2, depth + 1, True))
                 return value
 
-        minimax(game_state.board, 0, True)
+        def minimax_alpha_beta(board: SudokuBoard, depth, alpha, beta, isMaximisingPlayer, real_board=game_state.board):
+            """
+            @param board: A sudoku board.
+            @param depth: The corresponding depth within the tree.
+            @param isMaximisingPlayer: True/False indicator for min/max search.
+            @Return: return the best possible next move according to the minimax
+            ONLY WORKS FOR DEPTH == 2 YET
+            """
+
+            if depth == 2:
+                return evaluate_board(board)  # returned value: the board after the 'best' move from opponent.
+
+            all_moves_list = possible(board)
+
+            if isMaximisingPlayer:
+                max_value = -math.inf
+                if depth == 0:
+                    value_max = 0
+                for move in all_moves_list:
+                    board.put(move.i, move.j, move.value)
+                    value = minimax_alpha_beta(board, depth + 1, alpha, beta, False, board)
+                    max_value = max(max_value, value)
+
+                    alpha = max(alpha, value)
+                    if beta <= alpha:
+                        break
+
+                    if depth == 0 and value > value_max:
+                        max_value = value
+                        self.propose_move(move)
+
+                    board = copy.deepcopy(game_state.board)
+
+                return value
+
+            else:
+                min_value = +math.inf
+                for move in all_moves_list:
+                    board2 = copy.deepcopy(real_board)
+                    board2.put(move.i, move.j, move.value)
+                    value = minimax_alpha_beta(board2, depth + 1, alpha, beta, False)
+                    min_value = min(min_value, value)
+                return min_value
+
+        # minimax(game_state.board, 0, True)
+        minimax_alpha_beta(game_state.board, 0, -math.inf, math.inf, True)

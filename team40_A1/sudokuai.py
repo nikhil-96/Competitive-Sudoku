@@ -236,10 +236,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     board.put(move.i, move.j, move.value)  # Actually play the move in the board
                     score_1 += score_eval(board, move)  # Increase the score by whatever the move would be worth
                     value = minimax_alpha_beta(board, depth + 1, alpha, beta, False, score_1, score_2) # Dive into the recursive structure
+
+                    print('depth, beta:')
+                    print(depth, beta)
                     max_evaluation = max(value, max_evaluation)
                     alpha = max(alpha, value)
 
                     if beta <= alpha:
+                        print('broke')
                         break
 
                     board.put(move.i, move.j, 0)  # Revert the played move
@@ -265,13 +269,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     value = minimax_alpha_beta(board, depth + 1, alpha, beta, False, score_1, score_2)
                     min_evaluation = min(value, min_evaluation)
                     beta = min(beta, value)
+
+                    if beta <= alpha:
+                        print('broke')
+                        break
                 return min_evaluation
 
 
         max_depth = 0  # Initialize max_depth
 
         # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
-        for i in range(0, 3):
+        for i in range(0, 5):
             max_depth = i  # Update the max depth
             # minimax(game_state.board, 0, True, game_state.scores[0],
             #         game_state.scores[1])  # call the minmax function for the given max_depth

@@ -233,7 +233,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def minimax_alpha_beta(board: SudokuBoard, depth, alpha, beta, is_maximising_player):
             """
-            @param board: A sudoku board.
+            @param board: A current sudoku board.
             @param depth: The corresponding depth within the tree.
             @param is_maximising_player: True/False indicator for min/max search.
             @Return: return the best possible next move according to the minimax
@@ -319,26 +319,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
 
 
-        # for i in range(0, 7):
-        #     max_depth = i                                         # Update the max depth
-        #
-        #
-        #     #all_moves = possible(game_state.board)
-        #
-        #     # if len(all_moves) > 30:
-        #     #     self.propose_move(random.choice(all_moves))
-        #     # else:
-        #
-        #     minimax(game_state.board, 0, True)
-        #     #minimax_alpha_beta(game_state.board, 0, -math.inf, math.inf, True)      # call the minmax function for the given max_depth
-        #
-        #     self.propose_move((self.top_move))
-
 
         all_moves = possible(game_state.board)
         print(len(all_moves))
 
-        if len(all_moves) > 40:
+        if len(all_moves) > 80:
             while True:
                 considered_move = random.choice(all_moves)
                 game_state2.board.put(considered_move.i, considered_move.j, considered_move.value)
@@ -356,7 +341,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 self.max_value_start = game_state2.scores[0] - game_state2.scores[1]
 
 
-            for i in range(0, 8):
+            for i in range(0, 15):
                 max_depth = i                                         # Update the max depth
                 minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
                 self.propose_move(self.top_move)

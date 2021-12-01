@@ -61,8 +61,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 # calculate sub-squares and prepare list of possible values
                 values_left = list(range(1, N+1))        # This list wil eventually contain all the values possible on coordinate (i,j)
-                (p, q) = (int(math.ceil((coords[0] + 1) / n) * n)-1, int(math.ceil((coords[1] + 1) / m) * m)-1)   # calculates the highest coordinates in the sub-square
-                (r, s) = (p-(n-1), q-(m-1))                                                          # calculates the lowest coordinates in the sub-square
+                (p, q) = (int(math.ceil((coords[0] + 1) / m) * m)-1, int(math.ceil((coords[1] + 1) / n) * n)-1)   # calculates the highest coordinates in the sub-square
+                (r, s) = (p-(m-1), q-(n-1))                                                          # calculates the lowest coordinates in the sub-square
 
                 # remove all values that already exist on the same row/column/box as coords from the possible value list for that coord.
                 for i in range(N):
@@ -108,8 +108,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # sub_squares = [[matrix[j][i] for j in range(x, x + m) for i in range(y, y + n)] for x in range(0, N, m)for y in range(0, N, n)]
 
             # Calculate in which quadrant the given move falls.
-            (p, q) = (int(math.ceil((move.i + 1) / n) * n) - 1, int(math.ceil((move.j + 1) / m) * m) - 1)  # calculates the highest coordinates in the sub-square
-            (r, s) = (p - (n - 1), q - (m - 1))  # calculates the lowest coordinates in the sub-square
+            (p, q) = (int(math.ceil((move.i + 1) / m) * m) - 1, int(math.ceil((move.j + 1) / n) * n) - 1)  # calculates the highest coordinates in the sub-square
+            (r, s) = (p - (m - 1), q - (n - 1))  # calculates the lowest coordinates in the sub-square
 
             # For the given quadrant, check whether any of the squares are filled with zero, if so switch to false
             for x in range(r, p + 1):
@@ -140,8 +140,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     column_filled = False
 
             # Calculate in which quadrant the given move falls.
-            (p, q) = (int(math.ceil((move.i + 1) / n) * n) - 1, int(math.ceil((move.j + 1) / m) * m) - 1)  # calculates the highest coordinates in the sub-square
-            (r, s) = (p - (n - 1), q - (m - 1))  # calculates the lowest coordinates in the sub-square
+            (p, q) = (int(math.ceil((move.i + 1) / m) * m) - 1, int(math.ceil((move.j + 1) / n) * n) - 1)  # calculates the highest coordinates in the sub-square
+            (r, s) = (p - (m - 1), q - (n - 1))  # calculates the lowest coordinates in the sub-square
 
             # For the given quadrant, check whether any of the squares are filled with zero, if so switch to false
             for x in range(r, p + 1):
@@ -203,7 +203,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                             self.max_value = value
                             # self.propose_move(move)
                             self.top_move = Move(move.i,move.j,move.value)
-                        #TODO, propose een move in de for loop helemaal beneden
                     elif depth == 0 and move not in game_state.taboo_moves and value == self.max_value == self.max_value_start:
                         # self.max_value = value
                         # print(move)
@@ -277,7 +276,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                             self.max_value = max_evaluation
                             # self.propose_move(move)
                             self.top_move = Move(move.i,move.j,move.value)
-                        #TODO, propose een move in de for loop helemaal beneden
                     elif depth == 0 and move not in game_state.taboo_moves and max_evaluation == self.max_value == self.max_value_start:
                         # self.max_value = value
                         # print(move)
@@ -321,9 +319,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
 
         all_moves = possible(game_state.board)
-        print(len(all_moves))
 
-        if len(all_moves) > 80:
+
+        go_minimax = 80
+
+        if N > 15:
+            go_minimax = 50
+
+        if len(all_moves) > go_minimax:
             while True:
                 considered_move = random.choice(all_moves)
                 game_state2.board.put(considered_move.i, considered_move.j, considered_move.value)
@@ -343,5 +346,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             for i in range(0, 15):
                 max_depth = i                                         # Update the max depth
-                minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
+                minimax(game_state.board, 0, True)                     # call the minmax function for the given max_depth
+
+
                 self.propose_move(self.top_move)

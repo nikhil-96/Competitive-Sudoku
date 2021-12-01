@@ -145,8 +145,8 @@ def main():
         board_text = Path(args.board).read_text()
     board = load_sudoku_from_text(board_text)
 
-    module1 = importlib.import_module('team40_A1' + '.sudokuai')
-    module2 = importlib.import_module('greedy_player' + '.sudokuai')
+    module1 = importlib.import_module(args.first + '.sudokuai')
+    module2 = importlib.import_module(args.second + '.sudokuai')
     player1 = module1.SudokuAI()
     player2 = module2.SudokuAI()
     if args.first in ('random_player', 'greedy_player'):

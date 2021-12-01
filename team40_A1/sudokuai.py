@@ -18,6 +18,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
+        self.best_move = Move(0, 0, 0)
 
     def compute_best_move(self, game_state: GameState) -> None:
 
@@ -152,139 +153,87 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             elif true_values == 3:
                 score = 7
             else:
-                score = 0.01
+                score = 0
 
             return score
 
-        def minimax(board: SudokuBoard, depth, is_maximising_player, score_1, score_2):
+
+        def minimax(board: SudokuBoard, depth, is_maximising_player):
             """
             @param board: A sudoku board.
             @param depth: The corresponding depth within the tree.
             @param is_maximising_player: True/False indicator for min/max search.
-            @param score_1: Score calculation for player 1
-            @param score_2: Score calculation for player 2
             @Return: return the best possible next move according to the minimax
             """
 
-            all_moves_list = possible(board)  # Check all moves given a specific board
+            all_moves_list = possible(game_state2.board)                      # Check all moves on the copied board
 
-            if depth == max_depth or len(
-                    all_moves_list) == 0:  # Checks whether we are in a leaf node or on the last possible move
-                print("Final score: ", score_1 - score_2)  # This print is only here to show what score we calculated
-                return score_1 - score_2
+            if depth == max_depth or len(all_moves_list) == 0:    # Checks whether we are in a leaf node or on the last possible move
+                return game_state2.scores[0]-game_state2.scores[1]
 
-            if is_maximising_player:  # Check whether we are the maximising player
+            if is_maximising_player:                              # Check whether we are the maximising player
                 value = -math.inf
-                max_value = 0  # Temporary counter to compare against
 
                 for move in all_moves_list:
 
-                    score_1_temp = copy.deepcopy(score_1)  # Copy the score value
-                    board.put(move.i, move.j, move.value)  # Actually play the move in the board
-                    score_1 += score_eval(board, move)  # Increase the score by whatever the move would be worth
-                    value = max(value, minimax(board, depth + 1, False, score_1, score_2))  # Dive into the recursive structure
+                    # This chunk places the move on a copy of the board, evaluates it and updates the copied score
+                    game_state2.board.put(move.i, move.j, move.value)
+                    calculated_score = score_eval(game_state2.board, move)
+                    game_state2.scores[0] += calculated_score
+                    print("Move: ", move, " Depth: ", depth)
+                    print(game_state2.scores)
+                    value = max(value, minimax(game_state2.board, depth + 1, False))      # Here we go into recursion
 
-                    board.put(move.i, move.j, 0)  # Revert the played move
-                    score_1 = copy.deepcopy(score_1_temp)  # Revert the score to the value before we played the above move
+                    # After the recursion we remove the move and also re-calculate the score
+                    game_state2.board.put(move.i, move.j, 0)
+                    game_state2.scores[0] = game_state2.scores[0]-calculated_score
 
-                    if depth == 0 and value > max_value:  # if depth == 0, Update max_value and propose the move
-                        max_value = value
+                    if depth == 0 and move not in game_state.taboo_moves:          # if depth == 0 and also not a taboo_move, propose it
+                        print(move)
                         self.propose_move(move)
+                        #TODO, propose een move in de for loop helemaal beneden
 
-                return value  # Return the value (Not sure if this is necessary)
 
-            else:  # If we are not the maximizing player we end up here
-                value = math.inf  # Declare highest possible number to compare negative against
+                return value                                      # Return the value (Not sure if this is necessary)
 
-                for move in all_moves_list:  # For all moves possible:
+            else:                                                 # If we are not the maximizing player we end up here
+                value = math.inf                                  # Declare highest possible number to compare negative against
 
-                    score_2_temp = score_2  # Copy score_2 over (Also not sure if necessary)
-                    board2 = copy.deepcopy(board)  # TODO: Hier gebeurt dus nog iets fucky's. Als we achter staan in de laatste beurt kiest ie geen move om te doen omdat alle values negatief blijken te zijn (zie print statement)
-                    board2.put(move.i, move.j, move.value)
-                    score_2_temp += score_eval(board2, move)
-                    value = min(value, minimax(board2, depth + 1, True, score_1, score_2_temp))
+                for move in all_moves_list:                       # iterate over all the enemies moves
+
+                    # Once again, place the move on the board and update the score
+                    game_state2.board.put(move.i, move.j, move.value)
+                    calculated_score2 = score_eval(game_state2.board, move)
+                    game_state2.scores[1] += calculated_score2
+                    print("Move: ", move, " Depth: ", depth)
+                    print(game_state2.scores)
+
+                    value = min(value, minimax(game_state2.board, depth + 1, True))  # Another recursive loop
+
+                    game_state2.board.put(move.i, move.j, 0)                         # Revert the played move and revert the scores to how it was
+                    game_state2.scores[1] = game_state2.scores[1] - calculated_score2
 
                 return value
 
+        #max_depth = 0                                             # Initialize max_depth
+
+        # Met de code hieronder kun je minimax gewoon een keer aanroepen, wss beter dan
+
+        max_depth = 0
+        game_state2 = copy.deepcopy(game_state)
 
 
-
-        def minimax_alpha_beta(board: SudokuBoard, depth, alpha, beta, is_maximising_player, score_1, score_2):
-            """
-            @param board: A sudoku board.
-            @param depth: The corresponding depth within the tree.
-            @param is_maximising_player: True/False indicator for min/max search.
-            @param score_1: Score calculation for player 1
-            @param score_2: Score calculation for player 2
-            @Return: return the best possible next move according to the minimax
-            """
-
-            all_moves_list = possible(board)  # Check all moves given a specific board
-
-            if depth == max_depth or len(
-                    all_moves_list) == 0:  # Checks whether we are in a leaf node or on the last possible move
-                print("Final score: ", score_1 - score_2)  # This print is only here to show what score we calculated
-                return score_1 - score_2
-
-            if is_maximising_player:  # Check whether we are the maximising player
-                max_evaluation = -math.inf
-                max_value = 0  # Temporary counter to compare against
-
-                for move in all_moves_list:
-
-                    score_1_temp = copy.deepcopy(score_1)  # Copy the score value
-                    board.put(move.i, move.j, move.value)  # Actually play the move in the board
-                    score_1 += score_eval(board, move)  # Increase the score by whatever the move would be worth
-                    value = minimax_alpha_beta(board, depth + 1, alpha, beta, False, score_1, score_2) # Dive into the recursive structure
-
-                    print('depth, beta:')
-                    print(depth, beta)
-                    max_evaluation = max(value, max_evaluation)
-                    alpha = max(alpha, value)
-
-                    if beta <= alpha:
-                        print('broke')
-                        break
-
-                    board.put(move.i, move.j, 0)  # Revert the played move
-                    score_1 = copy.deepcopy(score_1_temp)  # Revert the score to the value before we played the above move
-
-                    if depth == 0 and max_evaluation > max_value:  # if depth == 0, Update max_value and propose the move
-                        max_value = max_evaluation
-                        self.propose_move(move)
-
-                return max_evaluation  # Return the value (Not sure if this is necessary)
-
-            else:  # If we are not the maximizing player we end up here
-                min_evaluation = math.inf  # Declare highest possible number to compare negative against
-
-                for move in all_moves_list:  # For all moves possible:
-
-
-                    score_2_temp = score_2  # Copy score_2 over (Also not sure if necessary)
-                    board2 = copy.deepcopy(board)  # TODO: Hier gebeurt dus nog iets fucky's. Als we achter staan in de laatste beurt kiest ie geen move om te doen omdat alle values negatief blijken te zijn (zie print statement)
-                    board2.put(move.i, move.j, move.value)
-                    score_2_temp += score_eval(board2, move)
-
-                    value = minimax_alpha_beta(board, depth + 1, alpha, beta, False, score_1, score_2)
-                    min_evaluation = min(value, min_evaluation)
-                    beta = min(beta, value)
-
-                    if beta <= alpha:
-                        print('broke')
-                        break
-                return min_evaluation
-
-
-        max_depth = 0  # Initialize max_depth
 
         # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
-        for i in range(0, 5):
-            max_depth = i  # Update the max depth
-            # minimax(game_state.board, 0, True, game_state.scores[0],
-            #         game_state.scores[1])  # call the minmax function for the given max_depth
+        for i in range(0, 2):
+            max_depth = i                                         # Update the max depth
+            minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
 
-            minimax_alpha_beta(game_state.board, 0,-math.inf, math.inf, True, game_state.scores[0], game_state.scores[1])  # call the minmax function for the given max_depth
+            #TODO propose hier de move ipv in de recursie
 
-        # Uncomment om een illegale move te doen zodat je terminal niet vol wordt gespammed
-        # self.propose_move(Move(3, 2, 3))
+            print("Assess board: ")
+            print(game_state.initial_board)
+            for j in game_state.moves:
+                print(j)
+
+

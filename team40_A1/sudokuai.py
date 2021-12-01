@@ -86,39 +86,40 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return all_moves
 
         # This part of the code is unused and obsolete!!!!!!!!
-        def evaluate_board(board: SudokuBoard):
+        def evaluate_board(board: SudokuBoard, move: Move):
             """
+            @param move: The move considered on the board
             @param board: A sudoku board.
             @Return: an integer with a numeric value. Higher = better board state
             """
-            final_score = 1     # This value will be the final score for the board evaluation, all subroutines add or subtract from this score
+            move_check = True     # if true, valid move. false = not valid move
             matrix = convert_to_matrix(board)
+            row_filled = column_filled = box_filled = 0
 
             # These loops increase the evaluation score for each row/column that has one place left to fill in (it can increase our score)
-            for i in range(N):
-                row_counter = 0
-                column_counter = 0
-                for j in range(N):
-                    if matrix[i][j] == 0:
-                        row_counter = row_counter+1
-                    if matrix[j][i] == 0:
-                        column_counter = column_counter+1
-                if row_counter == 1:
-                    final_score = final_score+1
-                if column_counter == 1:
-                    final_score = final_score+1
+            # This loop checks whether there is another 0 on the same row and column, if so switches state to false
+            for iterator in range(N):
+                if matrix[move.i][iterator] == 0:
+                    row_filled += 1
+                if matrix[iterator][move.j] == 0:
+                    column_filled += 1
 
-            # calculate box_scores
             # create all the sub_squares
-            sub_squares = [[matrix[j][i] for j in range(x, x + m) for i in range(y, y + n)] for x in range(0, N, m)for y in range(0, N, n)]
+            # sub_squares = [[matrix[j][i] for j in range(x, x + m) for i in range(y, y + n)] for x in range(0, N, m)for y in range(0, N, n)]
 
-            # Checks if there is only one zero in a sub-square and increases the counter if true
-            for i in range(len(sub_squares)):
+            # Calculate in which quadrant the given move falls.
+            (p, q) = (int(math.ceil((move.i + 1) / n) * n) - 1, int(math.ceil((move.j + 1) / m) * m) - 1)  # calculates the highest coordinates in the sub-square
+            (r, s) = (p - (n - 1), q - (m - 1))  # calculates the lowest coordinates in the sub-square
 
-                if sub_squares[i].count(0) == 1:
-                    final_score = final_score+1
+            # For the given quadrant, check whether any of the squares are filled with zero, if so switch to false
+            for x in range(r, p + 1):
+                for y in range(s, q + 1):
+                    if board.get(x, y) == 0:
+                        box_filled +=1
+            if row_filled == 1 or column_filled == 1 or box_filled ==1:
+                move_check = False
 
-            return final_score
+            return move_check
 
         # This evaluation function uses the score of the board as the eventual evaluation function
         def score_eval(board: SudokuBoard, move: Move):
@@ -230,8 +231,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return value
 
 
-
-
         def minimax_alpha_beta(board: SudokuBoard, depth, alpha, beta, is_maximising_player):
             """
             @param board: A sudoku board.
@@ -320,17 +319,43 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
 
 
-        for i in range(0, 4):
-            max_depth = i                                         # Update the max depth
+        # for i in range(0, 7):
+        #     max_depth = i                                         # Update the max depth
+        #
+        #
+        #     #all_moves = possible(game_state.board)
+        #
+        #     # if len(all_moves) > 30:
+        #     #     self.propose_move(random.choice(all_moves))
+        #     # else:
+        #
+        #     minimax(game_state.board, 0, True)
+        #     #minimax_alpha_beta(game_state.board, 0, -math.inf, math.inf, True)      # call the minmax function for the given max_depth
+        #
+        #     self.propose_move((self.top_move))
 
 
-            #all_moves = possible(game_state.board)
+        all_moves = possible(game_state.board)
+        print(len(all_moves))
 
-            # if len(all_moves) > 30:
-            #     self.propose_move(random.choice(all_moves))
-            # else:
+        if len(all_moves) > 40:
+            while True:
+                considered_move = random.choice(all_moves)
+                game_state2.board.put(considered_move.i, considered_move.j, considered_move.value)
+                if evaluate_board(game_state2.board, considered_move) and considered_move not in game_state.taboo_moves:
+                        self.propose_move(considered_move)
+                        game_state2.board.put(considered_move.i, considered_move.j, 0)
+                        break
 
-            minimax(game_state.board, 0, True)
-            #minimax_alpha_beta(game_state.board, 0, -math.inf, math.inf, True)      # call the minmax function for the given max_depth
+        # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
+        else:
+            max_depth = 0
+            # if not player1:
+            #     print(game_state2.scores)
+            #     game_state2.scores[0], game_state2.scores[1] = game_state2.scores[1], game_state2.scores[0]
+            #     print(game_state2.scores)
 
-            self.propose_move((self.top_move))
+            for i in range(0, 8):
+                max_depth = i                                         # Update the max depth
+                minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
+                self.propose_move(self.top_move)

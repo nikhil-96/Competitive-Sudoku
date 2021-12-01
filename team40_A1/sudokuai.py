@@ -31,13 +31,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         N = game_state.board.N  # depth of matrix
         n = game_state.board.n  # number of rows in a block
         m = game_state.board.m  # number of columns in a block
-        player = 1              # This keeps track of whether we are player 1 or player 2
+        player1 = True            # This keeps track of whether we are player 1 or player 2
 
 
 
         open_squares_init = [(i, j) for i in range(N) for j in range(N) if game_state.initial_board.get(i, j) == SudokuBoard.empty]
         if len(game_state.moves) % 2 == 1:
-            player = 2              # Change our player number to 2 if we are player two
+            player1 = False            # Change our player number to 2 if we are player two
 
         def convert_to_matrix(board: SudokuBoard):
             """
@@ -350,10 +350,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
         else:
             max_depth = 0
-            # if not player1:
-            #     print(game_state2.scores)
-            #     game_state2.scores[0], game_state2.scores[1] = game_state2.scores[1], game_state2.scores[0]
-            #     print(game_state2.scores)
+            if not player1:
+                game_state2.scores[0], game_state2.scores[1] = game_state2.scores[1], game_state2.scores[0]
+                self.max_value = game_state2.scores[0] - game_state2.scores[1]
+                self.max_value_start = game_state2.scores[0] - game_state2.scores[1]
+
 
             for i in range(0, 8):
                 max_depth = i                                         # Update the max depth

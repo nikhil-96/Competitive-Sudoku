@@ -18,7 +18,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
-        self.best_move = Move(0, 0, 0)
+
+        self.top_move = Move(0,0,0)
+        self.max_value = 0
+        self.max_value_start = 0
+
+
 
     def compute_best_move(self, game_state: GameState) -> None:
 
@@ -168,6 +173,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             all_moves_list = possible(game_state2.board)                      # Check all moves on the copied board
 
+
             if depth == max_depth or len(all_moves_list) == 0:    # Checks whether we are in a leaf node or on the last possible move
                 return game_state2.scores[0]-game_state2.scores[1]
 
@@ -176,23 +182,32 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 for move in all_moves_list:
 
+
                     # This chunk places the move on a copy of the board, evaluates it and updates the copied score
                     game_state2.board.put(move.i, move.j, move.value)
                     calculated_score = score_eval(game_state2.board, move)
                     game_state2.scores[0] += calculated_score
-                    print("Move: ", move, " Depth: ", depth)
-                    print(game_state2.scores)
+
+
+                    # print(game_state2.scores)
                     value = max(value, minimax(game_state2.board, depth + 1, False))      # Here we go into recursion
 
                     # After the recursion we remove the move and also re-calculate the score
                     game_state2.board.put(move.i, move.j, 0)
                     game_state2.scores[0] = game_state2.scores[0]-calculated_score
 
-                    if depth == 0 and move not in game_state.taboo_moves:          # if depth == 0 and also not a taboo_move, propose it
-                        print(move)
-                        self.propose_move(move)
-                        #TODO, propose een move in de for loop helemaal beneden
 
+                    if depth == 0 and move not in game_state.taboo_moves and value > self.max_value_start:          # if depth == 0 and also not a taboo_move, propose it
+                        if value > self.max_value:
+                            self.max_value = value
+                            # self.propose_move(move)
+                            self.top_move = Move(move.i,move.j,move.value)
+                        #TODO, propose een move in de for loop helemaal beneden
+                    elif depth == 0 and move not in game_state.taboo_moves and value == self.max_value == self.max_value_start:
+                        # self.max_value = value
+                        # print(move)
+                        # self.propose_move(move)
+                        self.top_move = Move(move.i, move.j, move.value)
 
                 return value                                      # Return the value (Not sure if this is necessary)
 
@@ -205,8 +220,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     game_state2.board.put(move.i, move.j, move.value)
                     calculated_score2 = score_eval(game_state2.board, move)
                     game_state2.scores[1] += calculated_score2
-                    print("Move: ", move, " Depth: ", depth)
-                    print(game_state2.scores)
+                    # print("Move: ", move, " Depth: ", depth)
 
                     value = min(value, minimax(game_state2.board, depth + 1, True))  # Another recursive loop
 
@@ -215,25 +229,32 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 return value
 
-        #max_depth = 0                                             # Initialize max_depth
 
         # Met de code hieronder kun je minimax gewoon een keer aanroepen, wss beter dan
 
         max_depth = 0
         game_state2 = copy.deepcopy(game_state)
 
+        self.max_value = game_state2.scores[0] - game_state2.scores[1]
+        self.max_value_start = game_state2.scores[0] - game_state2.scores[1]
 
 
         # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
-        for i in range(0, 2):
+        for i in range(0,4):
             max_depth = i                                         # Update the max depth
-            minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
+            all_moves = possible(game_state.board)
 
-            #TODO propose hier de move ipv in de recursie
+            if len(all_moves) > 30:
+                self.propose_move(random.choice(all_moves))
+            else:
+                minimax(game_state.board, 0, True)      # call the minmax function for the given max_depth
 
-            print("Assess board: ")
-            print(game_state.initial_board)
-            for j in game_state.moves:
-                print(j)
+                self.propose_move((self.top_move))
+
+
+
+
+
+
 
 

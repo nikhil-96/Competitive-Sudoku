@@ -1,7 +1,7 @@
 #  (C) Copyright Wieger Wesselink 2021. Distributed under the GPL-3.0-or-later
 #  Software License, (See accompanying file LICENSE or copy at
 #  https://www.gnu.org/licenses/gpl-3.0.txt)
-
+import fnmatch
 import random
 import time
 import copy
@@ -19,107 +19,78 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     def __init__(self):
         super().__init__()
 
-        self.top_move = Move(0,0,0)
+        self.top_move = Move(0, 0, 0)
         self.max_value = 0
         self.max_value_start = 0
 
-
-
     def compute_best_move(self, game_state: GameState) -> None:
 
-        # Get the standard needed variables
-        N = game_state.board.N  # depth of matrix
-        n = game_state.board.n  # number of rows in a block
-        m = game_state.board.m  # number of columns in a block
-        player1 = True            # This keeps track of whether we are player 1 or player 2
+        def check_if_first_player():
+            """
+            @Return: True if we are player 1 and False if we are player 2
+            """
+            if len(game_state.moves) % 2 == 1:
+                return False
+            else:
+                return True
 
-
-
-        open_squares_init = [(i, j) for i in range(N) for j in range(N) if game_state.initial_board.get(i, j) == SudokuBoard.empty]
-        if len(game_state.moves) % 2 == 1:
-            player1 = False            # Change our player number to 2 if we are player two
-
-        def convert_to_matrix(board: SudokuBoard):
+        def get_all_empty_squares(board: SudokuBoard):
             """
             @param board: A sudoku board.
-            @Return: a 2D array of the given board
+            @Return: an array with the coordinates of all the empty squares
             """
-            matrix = [board.squares[i:i+N] for i in range(0, len(board.squares), N)]
-            return matrix
+            open_squares = [(i, j) for i in range(board.N) for j in range(board.N) if board.get(i, j) == SudokuBoard.empty]
+            return open_squares
+
+        def check_row_and_column_values(board: SudokuBoard, x, y):
+            """
+            @param board: A sudoku board.
+            @param x: A row-coordinate
+            @param y: A column-coordinate
+            @Return: Two arrays, containing all values currently on the row and column
+            """
+            column_values = []
+            row_values = []
+            for iterator in range(board.N):
+                row_values.append(board.get(x, iterator))
+                column_values.append(board.get(iterator, y))
+            return row_values, column_values
+
+        def check_sub_square_values(board: SudokuBoard, x, y):
+            """
+            @param board: A sudoku board.
+            @param x: A row-coordinate
+            @param y: A column-coordinate
+            @Return: An array, containing all values of the sub-matrix that the given move is in
+            """
+            sub_matrix_values = []
+            (p, q) = (int(math.ceil((x + 1) / board.m) * board.m) - 1, int(math.ceil((y + 1) / board.n) * board.n) - 1)  # calculates the highest coordinates in the sub-square
+            (r, s) = (p - (board.m - 1), q - (board.n - 1))  # calculates the lowest coordinates in the sub-square
+            for i in range(r, p + 1):
+                for j in range(s, q + 1):
+                    sub_matrix_values.append(board.get(i, j))
+            return sub_matrix_values
 
         def possible(board: SudokuBoard):
             """
             @param board: A sudoku board.
             @Return: an array with all possible/legal moves in the Move format (x-coord, y-coord, value)
             """
-
             all_moves = []              # this will contain all the moves in the end
-            # Make a list of all the squares that have not yet been filled in
-            open_squares = [(i, j) for i in range(N) for j in range(N) if
-                            board.get(i, j) == SudokuBoard.empty]
+            open_squares = get_all_empty_squares(board)
             for coords in open_squares:  # loop over all empty squares
 
-                # calculate sub-squares and prepare list of possible values
-                values_left = list(range(1, N+1))        # This list wil eventually contain all the values possible on coordinate (i,j)
-                (p, q) = (int(math.ceil((coords[0] + 1) / m) * m)-1, int(math.ceil((coords[1] + 1) / n) * n)-1)   # calculates the highest coordinates in the sub-square
-                (r, s) = (p-(m-1), q-(n-1))                                                          # calculates the lowest coordinates in the sub-square
+                values_left = list(range(1, board.N+1))                                           # This list wil eventually contain all the values possible on coordinate (i,j)
+                row_values, column_values = check_row_and_column_values(board, *coords)     # Get all values on row and column for given move
+                sub_square_values = check_sub_square_values(board, *coords)                 # Get all values in sub-matrix for given move
+                joined_values = row_values + column_values + sub_square_values              # Put all values them together
+                remaining_moves = [x for x in values_left if x not in joined_values]        # Keep only the values that are not on the board yet
 
-                # remove all values that already exist on the same row/column/box as coords from the possible value list for that coord.
-                for i in range(N):
-                    if board.get(coords[0], i) in values_left:
-                        values_left.remove(board.get(coords[0], i))
-                    if board.get(i, coords[1]) in values_left:
-                        values_left.remove(board.get(i, coords[1]))
-                for x in range(r, p+1):
-                    for y in range(s, q+1):
-                        if board.get(x, y) in values_left:
-                            values_left.remove(board.get(x, y))
-
-                for value in values_left:
-                    all_moves.append(Move(coords[0], coords[1], value))
-
-            # We input all moves and then check the oracle to see which ones are illegal
-            for move in all_moves:
-                if move in game_state.taboo_moves:
-                    all_moves.remove(move)
+                for value in remaining_moves:                                               # Add values to the list if not in tabooMove
+                    if Move(coords[0], coords[1], value) not in game_state.taboo_moves:
+                        all_moves.append(Move(coords[0], coords[1], value))
 
             return all_moves
-
-        # This part of the code is unused and obsolete!!!!!!!!
-        def evaluate_board(board: SudokuBoard, move: Move):
-            """
-            @param move: The move considered on the board
-            @param board: A sudoku board.
-            @Return: an integer with a numeric value. Higher = better board state
-            """
-            move_check = True     # if true, valid move. false = not valid move
-            matrix = convert_to_matrix(board)
-            row_filled = column_filled = box_filled = 0
-
-            # These loops increase the evaluation score for each row/column that has one place left to fill in (it can increase our score)
-            # This loop checks whether there is another 0 on the same row and column, if so switches state to false
-            for iterator in range(N):
-                if matrix[move.i][iterator] == 0:
-                    row_filled += 1
-                if matrix[iterator][move.j] == 0:
-                    column_filled += 1
-
-            # create all the sub_squares
-            # sub_squares = [[matrix[j][i] for j in range(x, x + m) for i in range(y, y + n)] for x in range(0, N, m)for y in range(0, N, n)]
-
-            # Calculate in which quadrant the given move falls.
-            (p, q) = (int(math.ceil((move.i + 1) / m) * m) - 1, int(math.ceil((move.j + 1) / n) * n) - 1)  # calculates the highest coordinates in the sub-square
-            (r, s) = (p - (m - 1), q - (n - 1))  # calculates the lowest coordinates in the sub-square
-
-            # For the given quadrant, check whether any of the squares are filled with zero, if so switch to false
-            for x in range(r, p + 1):
-                for y in range(s, q + 1):
-                    if board.get(x, y) == 0:
-                        box_filled +=1
-            if row_filled == 1 or column_filled == 1 or box_filled ==1:
-                move_check = False
-
-            return move_check
 
         # This evaluation function uses the score of the board as the eventual evaluation function
         def score_eval(board: SudokuBoard, move: Move):
@@ -128,26 +99,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
              @param board: A sudoku board.
              @Return: Return the value in points that the move has if it would be played on the board
              """
-
-            matrix = convert_to_matrix(board)               # Quick conversion to do simple calculations
             row_filled = column_filled = box_filled = True  # These variables are false when there is a 0 in their area on the board
 
-            # This loop checks whether there is another 0 on the same row and column, if so switches state to false
-            for iterator in range(N):
-                if matrix[move.i][iterator] == 0:
-                    row_filled = False
-                if matrix[iterator][move.j] == 0:
-                    column_filled = False
+            row_values, column_values = check_row_and_column_values(board, move.i, move.j)
+            sub_square_values = check_sub_square_values(board, move.i, move.j)
 
-            # Calculate in which quadrant the given move falls.
-            (p, q) = (int(math.ceil((move.i + 1) / m) * m) - 1, int(math.ceil((move.j + 1) / n) * n) - 1)  # calculates the highest coordinates in the sub-square
-            (r, s) = (p - (m - 1), q - (n - 1))  # calculates the lowest coordinates in the sub-square
-
-            # For the given quadrant, check whether any of the squares are filled with zero, if so switch to false
-            for x in range(r, p + 1):
-                for y in range(s, q + 1):
-                    if board.get(x, y) == 0:
-                        box_filled = False
+            if 0 in row_values:
+                row_filled = False
+            if 0 in column_values:
+                column_filled = False
+            if 0 in sub_square_values:
+                box_filled = False
 
             # Increase the score by the point value depending on how many areas inputting the move would close off
             boolean_list = [row_filled, column_filled, box_filled]
@@ -160,75 +122,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 score = 7
             else:
                 score = 0
-
             return score
-
-
-        def minimax(board: SudokuBoard, depth, is_maximising_player):
-            """
-            @param board: A sudoku board.
-            @param depth: The corresponding depth within the tree.
-            @param is_maximising_player: True/False indicator for min/max search.
-            @Return: return the best possible next move according to the minimax
-            """
-
-            all_moves_list = possible(game_state2.board)                      # Check all moves on the copied board
-
-
-            if depth == max_depth or len(all_moves_list) == 0:    # Checks whether we are in a leaf node or on the last possible move
-                return game_state2.scores[0]-game_state2.scores[1]
-
-            if is_maximising_player:                              # Check whether we are the maximising player
-                value = -math.inf
-
-                for move in all_moves_list:
-
-
-                    # This chunk places the move on a copy of the board, evaluates it and updates the copied score
-                    game_state2.board.put(move.i, move.j, move.value)
-                    calculated_score = score_eval(game_state2.board, move)
-                    game_state2.scores[0] += calculated_score
-
-
-                    # print(game_state2.scores)
-                    value = max(value, minimax(game_state2.board, depth + 1, False))      # Here we go into recursion
-
-                    # After the recursion we remove the move and also re-calculate the score
-                    game_state2.board.put(move.i, move.j, 0)
-                    game_state2.scores[0] = game_state2.scores[0]-calculated_score
-
-
-                    if depth == 0 and move not in game_state.taboo_moves and value > self.max_value_start:          # if depth == 0 and also not a taboo_move, propose it
-                        if value > self.max_value:
-                            self.max_value = value
-                            # self.propose_move(move)
-                            self.top_move = Move(move.i,move.j,move.value)
-                    elif depth == 0 and move not in game_state.taboo_moves and value == self.max_value == self.max_value_start:
-                        # self.max_value = value
-                        # print(move)
-                        # self.propose_move(move)
-                        self.top_move = Move(move.i, move.j, move.value)
-
-                return value                                      # Return the value (Not sure if this is necessary)
-
-            else:                                                 # If we are not the maximizing player we end up here
-                value = math.inf                                  # Declare highest possible number to compare negative against
-
-                for move in all_moves_list:                       # iterate over all the enemies moves
-
-                    # Once again, place the move on the board and update the score
-                    game_state2.board.put(move.i, move.j, move.value)
-                    calculated_score2 = score_eval(game_state2.board, move)
-                    game_state2.scores[1] += calculated_score2
-                    # print("Move: ", move, " Depth: ", depth)
-
-                    value = min(value, minimax(game_state2.board, depth + 1, True))  # Another recursive loop
-
-                    game_state2.board.put(move.i, move.j, 0)                         # Revert the played move and revert the scores to how it was
-                    game_state2.scores[1] = game_state2.scores[1] - calculated_score2
-
-                return value
-
 
         def minimax_alpha_beta(board: SudokuBoard, depth, alpha, beta, is_maximising_player):
             """
@@ -240,27 +134,21 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             all_moves_list = possible(game_state2.board)                      # Check all moves on the copied board
 
-
-            if depth == max_depth or len(all_moves_list) == 0:    # Checks whether we are in a leaf node or on the last possible move
+            if depth == max_depth or len(all_moves_list) == 0:                # Checks whether we are in a leaf node or on the last possible move
                 return game_state2.scores[0]-game_state2.scores[1]
 
-            if is_maximising_player:                              # Check whether we are the maximising player
+            if is_maximising_player:                                          # Check whether we are the maximising player
                 max_evaluation = -math.inf
 
                 for move in all_moves_list:
-
 
                     # This chunk places the move on a copy of the board, evaluates it and updates the copied score
                     game_state2.board.put(move.i, move.j, move.value)
                     calculated_score = score_eval(game_state2.board, move)
                     game_state2.scores[0] += calculated_score
 
-
-                    # print(game_state2.scores)
                     value = minimax_alpha_beta(game_state2.board, depth + 1, alpha, beta, False)    # Here we go into recursion
-
                     max_evaluation = max(value, max_evaluation)
-
 
                     # After the recursion we remove the move and also re-calculate the score
                     game_state2.board.put(move.i, move.j, 0)
@@ -274,31 +162,26 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if depth == 0 and move not in game_state.taboo_moves and max_evaluation > self.max_value_start:          # if depth == 0 and also not a taboo_move, propose it
                         if max_evaluation > self.max_value:
                             self.max_value = max_evaluation
-                            # self.propose_move(move)
-                            self.top_move = Move(move.i,move.j,move.value)
+                            self.top_move = Move(move.i, move.j, move.value)
                     elif depth == 0 and move not in game_state.taboo_moves and max_evaluation == self.max_value == self.max_value_start:
-                        # self.max_value = value
-                        # print(move)
-                        # self.propose_move(move)
                         self.top_move = Move(move.i, move.j, move.value)
 
-                return max_evaluation                                      # Return the value (Not sure if this is necessary)
+                return max_evaluation                             # Return the value (Not sure if this is necessary)
 
             else:                                                 # If we are not the maximizing player we end up here
-                min_evaluation = math.inf                                  # Declare highest possible number to compare negative against
-
+                min_evaluation = math.inf                         # Declare highest possible number to compare negative against
                 for move in all_moves_list:                       # iterate over all the enemies moves
 
                     # Once again, place the move on the board and update the score
                     game_state2.board.put(move.i, move.j, move.value)
                     calculated_score2 = score_eval(game_state2.board, move)
                     game_state2.scores[1] += calculated_score2
-                    # print("Move: ", move, " Depth: ", depth)
 
                     value = minimax_alpha_beta(game_state2.board, alpha, beta, depth + 1, True)  # Another recursive loop
                     min_evaluation = max(value, min_evaluation)
 
-                    game_state2.board.put(move.i, move.j, 0)                         # Revert the played move and revert the scores to how it was
+                    # Revert the played move and revert the scores to how it was
+                    game_state2.board.put(move.i, move.j, 0)
                     game_state2.scores[1] = game_state2.scores[1] - calculated_score2
 
                     beta = min(beta, value)
@@ -307,46 +190,43 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 return min_evaluation
 
-        max_depth = 0
+        all_possible_moves = possible(game_state.board)
         game_state2 = copy.deepcopy(game_state)
 
-        self.max_value = game_state2.scores[0] - game_state2.scores[1]
-        self.max_value_start = game_state2.scores[0] - game_state2.scores[1]
+        # Here we will select appropriate strategy
+        too_many_moves = 30
+        move_chosen = False
+        # Case: too many moves->random non_committal_move
+        if len(all_possible_moves) > too_many_moves:
+            open_squares = get_all_empty_squares(game_state2.board)
+            print("Length of possible moves = ", len(all_possible_moves))
+            for moves in all_possible_moves:  # loop over all empty squares
+                row_values, column_values = check_row_and_column_values(game_state2.board, moves.i, moves.j)
+                sub_square_values = check_sub_square_values(game_state2.board, moves.i, moves.j)
+                print("Move: ", moves, " Row: ", row_values, " Column: ", column_values, " Matrix values: ", sub_square_values)
+                if row_values.count(0) == 1 or column_values.count(0) == 1 or sub_square_values.count(0) == 1:
+                    self.propose_move(moves)
+                    move_chosen = True
 
-
-        # # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
-
-
-
-        all_moves = possible(game_state.board)
-
-
-        go_minimax = 80
-
-        if N > 15:
-            go_minimax = 50
-
-        if len(all_moves) > go_minimax:
-            while True:
-                considered_move = random.choice(all_moves)
+            while not move_chosen:
+                considered_move = random.choice(all_possible_moves)
                 game_state2.board.put(considered_move.i, considered_move.j, considered_move.value)
-                if evaluate_board(game_state2.board, considered_move) and considered_move not in game_state.taboo_moves:
-                        self.propose_move(considered_move)
-                        game_state2.board.put(considered_move.i, considered_move.j, 0)
-                        break
+                if score_eval(game_state2.board, considered_move) != 0 and considered_move not in game_state.taboo_moves:
+                    self.propose_move(considered_move)
+                    game_state2.board.put(considered_move.i, considered_move.j, 0)
+                    break
 
-        # This is the iterative deepening code, it's very crude but it could be improved (for now always start at 0)
+        # Case: Minimax
         else:
-            max_depth = 0
-            if not player1:
+            self.max_value = 0
+            # Swap the scores if we are the other player
+            if not check_if_first_player():
                 game_state2.scores[0], game_state2.scores[1] = game_state2.scores[1], game_state2.scores[0]
                 self.max_value = game_state2.scores[0] - game_state2.scores[1]
                 self.max_value_start = game_state2.scores[0] - game_state2.scores[1]
 
-
-            for i in range(0, 15):
-                max_depth = i                                         # Update the max depth
-                minimax(game_state.board, 0, True)                     # call the minmax function for the given max_depth
-
-
+            for max_depth in range(0, 15):                                              # Update the max depth
+                minimax_alpha_beta(game_state2.board, 0, -math.inf, math.inf, True)      # call the minmax function for the given max_depth
                 self.propose_move(self.top_move)
+
+

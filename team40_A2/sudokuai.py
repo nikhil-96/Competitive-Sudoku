@@ -8,6 +8,7 @@ from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 from copy import deepcopy
 import math
+import numpy as np
 
 
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
@@ -422,12 +423,109 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if move_tuple[3] == 3:
                 return 7
 
+        def get_all_empty_squares(board: SudokuBoard):
+            """
+            @param board: A sudoku board.
+            @Return: an array with the coordinates of all the empty squares
+            """
+            open_squares = [(i, j) for i in range(board.N) for j in range(board.N) if board.get(i, j) == SudokuBoard.empty]
+            return open_squares
+
+        def check_row_and_column_values(board: SudokuBoard, x, y):
+            """
+            @param board: A sudoku board.
+            @param x: A row-coordinate
+            @param y: A column-coordinate
+            @Return: Two arrays, containing all values currently on the row and column
+            """
+            column_values = []
+            row_values = []
+            for iterator in range(board.N):
+                row_values.append(board.get(x, iterator))
+                column_values.append(board.get(iterator, y))
+            return row_values, column_values
+
+        def check_sub_square_values(board: SudokuBoard, x, y):
+            """
+            @param board: A sudoku board.
+            @param x: A row-coordinate
+            @param y: A column-coordinate
+            @Return: An array, containing all values of the sub-matrix that the given move is in
+            """
+            sub_matrix_values = []
+            (p, q) = (int(math.ceil((x + 1) / board.m) * board.m) - 1, int(math.ceil((y + 1) / board.n) * board.n) - 1)  # calculates the highest coordinates in the sub-square
+            (r, s) = (p - (board.m - 1), q - (board.n - 1))  # calculates the lowest coordinates in the sub-square
+            for i in range(r, p + 1):
+                for j in range(s, q + 1):
+                    sub_matrix_values.append(board.get(i, j))
+            return sub_matrix_values
+
+        def possible(board: SudokuBoard):
+            """
+            @param board: A sudoku board.
+            @Return: an array with all possible/legal moves in the format (x-coord, y-coord, value)
+            """
+            all_moves = []  # this will contain all the moves in the end
+            open_squares = get_all_empty_squares(game_state.board)
+
+            for coords in open_squares:  # loop over all empty squares
+
+                values_left = list(range(1,
+                                         board.N + 1))  # This list wil eventually contain all the values possible on coordinate (i,j)
+                row_values, column_values = check_row_and_column_values(board,
+                                                                        *coords)  # Get all values on row and column for given move
+                sub_square_values = check_sub_square_values(board,
+                                                            *coords)  # Get all values in sub-matrix for given move
+                joined_values = row_values + column_values + sub_square_values  # Put all values them together
+                remaining_moves = [x for x in values_left if
+                                   x not in joined_values]  # Keep only the values that are not on the board yet
+
+                for value in remaining_moves:  # Add values to the list if not in tabooMove
+                    if Move(coords[0], coords[1], value) not in game_state.taboo_moves:
+                        all_moves.append([(coords[0], coords[1]), value])
+
+            return all_moves
+
+        def get_taboo_moves():
+            """
+            @Return: an array with all taboo_moves based on row and columns only format is [(x-coord, y-coord), value]
+            """
+            all_moves = possible(game_state.board)  # Get all possible moves
+            single_value_coordinates = []   # Initialize the list of moves with only one value option
+            selected_items = [item[0] for item in all_moves]    # Fill a list with only the coordinates, not the value
+            taboo_moves = []    # Initialize the return list
+
+            # Loop over all possible moves and extract the ones that only have one value option
+            for i in all_moves:
+                if selected_items.count(i[0]) == 1:
+                    single_value_coordinates.append(i)
+
+            # Now check whether any other empty square on the same row, column or subsquare has the same value option,
+            # that is then a taboo_move
+            for single_moves in single_value_coordinates:
+                for move in all_moves:
+                    if single_moves != move and single_moves[1]==move[1] and \
+                            (single_moves[0][1] == move[0][1] or single_moves[0][0] == move[0][0] or
+                             check_sub_square_values(game_state.board, single_moves[0][0], single_moves[0][1]) ==
+                             check_sub_square_values(game_state.board, move[0][0], move[0][1])):
+                        taboo_moves.append(move)
+            return taboo_moves
+
+        # Strategy time from here on out
         # We first propose the greediest move possible.
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(
             game_state)
 
+
         proposed_move = create_move_from_tuple(greediest_move_tuple)
         self.propose_move(proposed_move)
+
+        # Here we select to change sides if it looks like we are not going to end a the last player
+        if len(get_all_empty_squares(game_state.board)) % 2 == 0:
+            taboo_moves = get_taboo_moves()
+            print(taboo_moves)
+            if taboo_moves:
+                self.propose_move(Move(taboo_moves[0][0][0], taboo_moves[0][0][1], taboo_moves[0][1]))
 
         # Now we initialize the arguments for our minmax algorithm
         legal_moves_list = get_legal_move_list_from_dict(legal_moves_dict)

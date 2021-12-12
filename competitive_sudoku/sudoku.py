@@ -262,6 +262,13 @@ class GameState(object):
         self.moves = moves
         self.scores = scores
 
+    def current_player(self):
+        """Gives the index of the current player (1 or 2). The convention is that player 1
+        does the first move of the game.
+        @return The index of the current player.
+        """
+        return 1 if len(self.moves) % 2 == 0 else 2
+
     def __str__(self):
         import io
         out = io.StringIO()

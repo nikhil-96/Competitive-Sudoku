@@ -488,7 +488,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def get_taboo_moves():
             """
-            @Return: an array with all taboo_moves based on row and columns only format is [(x-coord, y-coord), value]
+            @Return: an array with some taboo_moves based on rows columns and submatrices, format is [(x-coord, y-coord), value]
             """
             all_moves = possible(game_state.board)  # Get all possible moves
             single_value_coordinates = []   # Initialize the list of moves with only one value option
@@ -500,11 +500,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 if selected_items.count(i[0]) == 1:
                     single_value_coordinates.append(i)
 
-            # Now check whether any other empty square on the same row, column or subsquare has the same value option,
+            # Now check whether any other empty square on the same row, column or sub-square has the same value option,
             # that is then a taboo_move
             for single_moves in single_value_coordinates:
                 for move in all_moves:
-                    if single_moves != move and single_moves[1]==move[1] and \
+                    if single_moves != move and single_moves[1] == move[1] and \
                             (single_moves[0][1] == move[0][1] or single_moves[0][0] == move[0][0] or
                              check_sub_square_values(game_state.board, single_moves[0][0], single_moves[0][1]) ==
                              check_sub_square_values(game_state.board, move[0][0], move[0][1])):
@@ -515,17 +515,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # We first propose the greediest move possible.
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(
             game_state)
-
-
         proposed_move = create_move_from_tuple(greediest_move_tuple)
         self.propose_move(proposed_move)
 
-        # Here we select to change sides if it looks like we are not going to end a the last player
+        # Here we select to change sides if it looks like we are not going to end as the last player
         if len(get_all_empty_squares(game_state.board)) % 2 == 0:
             taboo_moves = get_taboo_moves()
-            print(taboo_moves)
-            if taboo_moves:
-                self.propose_move(Move(taboo_moves[0][0][0], taboo_moves[0][0][1], taboo_moves[0][1]))
+            while taboo_moves:
+                taboo_move = random.choice(taboo_moves)
+                if Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]) not in game_state.taboo_moves:
+                    self.propose_move(Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]))
+                    break
 
         # Now we initialize the arguments for our minmax algorithm
         legal_moves_list = get_legal_move_list_from_dict(legal_moves_dict)

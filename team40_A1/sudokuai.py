@@ -191,6 +191,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return min_evaluation
 
         all_possible_moves = possible(game_state.board)
+        for i in all_possible_moves:
+            print(i)
         game_state2 = copy.deepcopy(game_state)
 
         # Here we will select appropriate strategy

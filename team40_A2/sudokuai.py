@@ -8,7 +8,6 @@ from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 from copy import deepcopy
 import math
-import numpy as np
 
 
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
@@ -75,6 +74,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 # Add the value of the cells
                 # in that column to the set of illegal numbers.
                 cell = state.board.get(row_index, j)
+                # Heuristic 1 - remove already played numbers in column from legal moves
                 illegal_numbers_set.add(cell)
 
                 # If a cell is empty, then filling another empty cell
@@ -112,6 +112,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 # Add the value of the cells
                 # in that row to the set of illegal numbers.
                 cell = state.board.get(i, col_index)
+                # Heuristic 1 - remove already played numbers in row from legal moves
                 illegal_numbers_set.add(cell)
 
                 # If a cell is empty, then filling another empty cell
@@ -121,7 +122,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             return is_row_filled, illegal_numbers_set
 
-        def completes_subgrid(
+        def does_move_complete_subgrid(
                 state: GameState,
                 i: int,
                 j: int,
@@ -163,6 +164,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # to the illegal_numbers set
                     cell = state.board.get(
                         subgrid_row_index, subgrid_col_index)
+                    # Heuristic 1 - remove already played numbers in subgrid from legal moves
                     illegal_numbers_set.add(cell)
 
                     # If a cell in the subgrid is empty,
@@ -258,7 +260,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         will_fill_row, illegal_numbers_row = \
                             does_move_complete_row(state, i, j)
                         will_fill_subgrid, illegal_numbers_subgrid = \
-                            completes_subgrid(state, i, j)
+                            does_move_complete_subgrid(state, i, j)
 
                         illegal_numbers = illegal_numbers.union(
                             illegal_numbers_col,
@@ -266,14 +268,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                             illegal_numbers_subgrid
                         )
 
-                        score = will_fill_column + will_fill_row + \
-                            will_fill_subgrid
+                        # Heuristic 2 - assign score to every legal move
+                        score = will_fill_column + will_fill_row + will_fill_subgrid
 
                         # The set of legal numbers for a given cell, is
                         # the set of all possible moves - set of illegal moves
-                        legal_numbers = possible_numbers.difference(
-                            illegal_numbers
-                        )
+                        legal_numbers = possible_numbers.difference(illegal_numbers)
 
                         try:
                             elem = get_random_set_element(legal_numbers)
@@ -453,7 +453,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @Return: An array, containing all values of the sub-matrix that the given move is in
             """
             sub_matrix_values = []
-            (p, q) = (int(math.ceil((x + 1) / board.m) * board.m) - 1, int(math.ceil((y + 1) / board.n) * board.n) - 1)  # calculates the highest coordinates in the sub-square
+            # calculates the highest coordinates in the sub-square
+            (p, q) = (int(math.ceil((x + 1) / board.m) * board.m) - 1, int(math.ceil((y + 1) / board.n) * board.n) - 1)
             (r, s) = (p - (board.m - 1), q - (board.n - 1))  # calculates the lowest coordinates in the sub-square
             for i in range(r, p + 1):
                 for j in range(s, q + 1):
@@ -470,10 +471,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             for coords in open_squares:  # loop over all empty squares
 
-                values_left = list(range(1,
-                                         board.N + 1))  # This list wil eventually contain all the values possible on coordinate (i,j)
+                # This list wil eventually contain all the values possible on coordinate (i,j)
+                values_left = list(range(1, board.N + 1))
+                # Get all values on row and column for given move
                 row_values, column_values = check_row_and_column_values(board,
-                                                                        *coords)  # Get all values on row and column for given move
+                                                                        *coords)
                 sub_square_values = check_sub_square_values(board,
                                                             *coords)  # Get all values in sub-matrix for given move
                 joined_values = row_values + column_values + sub_square_values  # Put all values them together
@@ -488,7 +490,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def get_taboo_moves():
             """
-            @Return: an array with some taboo_moves based on rows columns and submatrices, format is [(x-coord, y-coord), value]
+            @Return: an array with some taboo_moves based on rows columns and submatrices,
+            format is [(x-coord, y-coord), value]
             """
             all_moves = possible(game_state.board)  # Get all possible moves
             single_value_coordinates = []   # Initialize the list of moves with only one value option

@@ -514,15 +514,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         taboo_moves.append(move)
             return taboo_moves
 
+
         # Strategy time from here on out
         # We first propose the greediest move possible.
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(
             game_state)
+
         proposed_move = create_move_from_tuple(greediest_move_tuple)
         self.propose_move(proposed_move)
 
         # Here we select to change sides if it looks like we are not going to end as the last player
-        if len(get_all_empty_squares(game_state.board)) % 2 == 0:
+        if len(get_all_empty_squares(game_state.board)) % 2 == 0 and greediest_move_tuple[3] == 0:
             taboo_moves = get_taboo_moves()
             while taboo_moves:
                 taboo_move = random.choice(taboo_moves)

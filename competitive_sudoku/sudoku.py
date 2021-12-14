@@ -272,6 +272,6 @@ class GameState(object):
     def __str__(self):
         import io
         out = io.StringIO()
-        out.write(print_board(self.board))
-        out.write(f'Score: {self.scores[0]} - {self.scores[1]}')
+        #out.write(print_board(self.board))
+        #out.write(f'Score: {self.scores[0]} - {self.scores[1]}')
         return out.getvalue()

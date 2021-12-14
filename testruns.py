@@ -21,9 +21,9 @@ def main():
     # board_list = ['boards\\easy-2x2.txt', 'boards\\easy-3x3.txt', 'boards\\empty-2x2.txt', 'boards\\empty-2x3.txt',
     #               'boards\\empty-3x4.txt', 'boards\\empty-4x4.txt', 'boards\\hard-3x3.txt', 'boards\\random-2x3.txt',
     #               'boards\\random-3x3.txt', 'boards\\random-3x4.txt', 'boards\\random-4x4.txt']
-    board_list = ['boards\\random-3x4.txt']
+    board_list = ['boards\\random-3x3.txt', 'boards\\empty-3x3.txt']
 
-    calculation_time = [0.5, 1]
+    calculation_time = [5]
 
 
     for boardy in board_list:
@@ -32,19 +32,21 @@ def main():
         board = load_sudoku_from_text(board_text)
         evt_winrates = []
         evt_lossrates  = []
+        rangey = 10
+        timestamp = 0
         # print("Checking board: ", boardy)
         for timey in calculation_time:
             time_scores = []
-            for i in range(6):
-                if i < 3:
+            for i in range(rangey):
+                if i < (rangey/2):
                     module1 = importlib.import_module('team40_A2.sudokuai')
                     player1 = module1.SudokuAI()
-                    module2 = importlib.import_module('greedy_player.sudokuai')
+                    module2 = importlib.import_module('team40_A1.sudokuai')
                     player2 = module2.SudokuAI()
                     player2.solve_sudoku_path = solve_sudoku_path
 
                 else:
-                    module1 = importlib.import_module('greedy_player.sudokuai')
+                    module1 = importlib.import_module('team40_A1.sudokuai')
                     player1 = module1.SudokuAI()
                     module2 = importlib.import_module('team40_A2.sudokuai')
                     player2 = module2.SudokuAI()
@@ -52,26 +54,25 @@ def main():
 
                 winner = simulate_game(board, player1, player2, solve_sudoku_path=solve_sudoku_path, calculation_time=timey)
                 time_scores.append(winner)
-                # print(time_scores)
+                print(time_scores)
 
             winrate = 0
 
-            for j in range(6):
+            for j in range(rangey):
                 # print(j)
-                if j < 3 and time_scores[j]==1:
+                if j < (rangey/2) and time_scores[j]==1:
                     winrate = winrate +1
-                elif j >= 3 and time_scores[j]==2:
+                elif j >= (rangey/2) and time_scores[j]==2:
                     winrate = winrate+1
-            lossrate = (6 - winrate) / 6
-            winrate = winrate/6
+            lossrate = (rangey - winrate) / rangey
+            winrate = winrate/rangey
 
             evt_winrates.append(winrate)
             evt_lossrates.append(lossrate)
+            timestamp = timey
+            print(timey, evt_winrates)
 
-
-            print(evt_winrates)
-
-        final_scores[boardy] = (evt_winrates, evt_lossrates)
+        final_scores[boardy] = (timestamp, evt_winrates, evt_lossrates)
         print(final_scores)
 
 if __name__ == '__main__':

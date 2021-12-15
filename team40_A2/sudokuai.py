@@ -564,7 +564,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # start with an initial depth of 3.
         depth = 3
         #initialize limit value (the value where from onwards score 3 is not >= than a score 1 at previous depths)
-        limit_value = 20
+        limit_value = 10
 
         while True:
             # To evaluate the nodes (new game states)

@@ -315,15 +315,22 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         return False
             return True
 
-        def evaluate(t: MiniGameState, player_number):
+        def evaluate(t: MiniGameState, player_number, start_depth, limit_value):
             """ Evaluates the current game score for 'our' AI agent
              based on the scores of the 2 players
-
             :param t: MiniGameState object containing scores of the 2 players
             :param player_number: number of 'our' AI agent
+            :param start_depth: the tree's depth at moment of calling this function
+            :param limit_value: the value where from onwards score 3 is not >= than a score 1 at previous depths
             :return: Evaluation of the game score for 'our' AI agent
             """
-            return t.scores[player_number - 1] - t.scores[2 - player_number]
+            #the score decreases as depth increases
+            #from the imit_value onwards a score of 3 becomes less than 1
+            #this according to the task description by Iko in group chat
+            fraction = (start_depth * (3.1/limit_value))
+            if (1/fraction) > 1.0:
+                fraction = 1
+            return (1/fraction) * (t.scores[player_number - 1] - t.scores[2 - player_number])
 
         def get_child_states(
                 t: Union[MiniGameState, GameState],
@@ -364,7 +371,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 is_our_agent: bool,
                 alpha: Union[float, int],
                 beta: Union[float, int],
-                our_player_number: int
+                our_player_number: int,
+                start_depth: int,
+                limit_value: int
         ) -> int:
             """
             :param t: The current tree node
@@ -372,17 +381,19 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             :param is_our_agent: bool value whether it is the move of 'our' AI
             :param our_player_number: integer (1 or 2)
              indicating our AI's player number
+            :param start_depth: the tree's depth at moment of calling the evaluation function
+            :param limit_value: the value where from onwards score 3 is not >= than a score 1 at previous depths
             :return: return the max or min score depending on the turn
             """
             # Check whether game is finished or we should finish evaluating
             if depth == 0 or is_game_finished(t.board):
-                return evaluate(t, our_player_number)
+                return evaluate(t, our_player_number, start_depth, limit_value)
 
             if is_our_agent:  # If it's the turn of the maximising player
                 maxEval = -math.inf
                 for child_t in get_child_states(t, True, our_player_number):
                     eval = minimax(child_t, depth - 1, False,
-                                   alpha, beta, our_player_number)
+                                   alpha, beta, our_player_number, start_depth, limit_value)
                     maxEval = max(maxEval, eval)
                     alpha = max(alpha, maxEval)
                     if beta <= alpha:
@@ -392,7 +403,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 minEval = math.inf
                 for child_t in get_child_states(t, False, our_player_number):
                     eval = minimax(child_t, depth - 1, True,
-                                   alpha, beta, our_player_number)
+                                   alpha, beta, our_player_number, start_depth, limit_value)
                     minEval = min(minEval, eval)
                     beta = min(beta, minEval)
                     if beta <= alpha:
@@ -518,13 +529,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # We first propose the greediest move possible.
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(
             game_state)
+
         proposed_move = create_move_from_tuple(greediest_move_tuple)
         self.propose_move(proposed_move)
-
         # Here we select to change sides if it looks like we are not going to end as the last player
-        if len(get_all_empty_squares(game_state.board)) % 2 == 0:
+        if len(get_all_empty_squares(game_state.board)) % 2 == 0 and greediest_move_tuple[3] == 0:
             taboo_moves = get_taboo_moves()
-            while taboo_moves:
+            while len(taboo_moves) != 0:
                 taboo_move = random.choice(taboo_moves)
                 if Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]) not in game_state.taboo_moves:
                     self.propose_move(Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]))
@@ -551,6 +562,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # start with an initial depth of 3.
         depth = 3
+        limit_value = 10
+
         while True:
             # To evaluate the nodes (new game states)
             # we create by making one of the moves in AI_legal_moves
@@ -559,10 +572,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             max_val = -math.inf
             selected_move = None
             for move in moves_after_AI_turn:
-                value = minimax(move[0], depth, False, alpha, beta, cur_player)
+                value = minimax(move[0], depth, False, alpha, beta, cur_player, depth, limit_value)
                 if value >= max_val:
                     max_val = value
                     selected_move = move[1]
-            if selected_move is not None:
+            if selected_move is not None and move_score(selected_move) >= move_score(greediest_move_tuple):
                 self.propose_move(create_move_from_tuple(selected_move))
+                greediest_move_tuple = selected_move
+            else:
+                self.propose_move(create_move_from_tuple(greediest_move_tuple))
             depth += 1

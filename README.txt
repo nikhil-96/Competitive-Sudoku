@@ -12,21 +12,23 @@ Contents
 - The folder 'boards' contains files with starting positions for a game.
 - The folder 'competitive_sudoku' is a python module with basic functionality
   needed for running a sudoku game.
-- The folders 'greedy_player', 'naive_player' and 'random_player' are three
-  python modules with predefined sudoku AI's. All three of them play random
-  moves.
+- The folders 'greedy_player', 'naive_player', 'random_player' and
+  'random_save_player' are four python modules with predefined sudoku AI's.
+  All four of them play random moves.
 
   *) The naive_player does not check for duplicate entries in a region.
   *) The random_player checks for duplicate entries in a region.
   *) The greedy_player checks for duplicate entries in a region, and it
      does a 1 ply deep search to maximize the reward of a move.
+  *) The random_save_player is a duplicate of random_player but using the save
+     functionalities as defined in the SudokuAI base class
 
-  Note that 'greedy_player' and 'random_player' make use of the sudoku solver.
+  Note that 'greedy_player', 'random_player' and 'random_save_player' make use of the sudoku solver.
   This is not allowed in the assignment.
 
 Requirements
 ------------
-Python 3.6 or higher is required to run the code. No additional python packages
+Python 3.8 or higher is required to run the code. No additional python packages
 need to be installed.
 
 Running simulate_game.py
@@ -89,6 +91,10 @@ Some constraints:
 - A requirement of a submission is that it should be possible to run it using
   simulate_game.py, without any modifications to this script, or to the code in
   the 'competitive_sudoku' folder. Test this!
+- Transferring knowledge across moves is only possible through the save and load
+  utility provided through the base class. This allows you to save any variable
+  into a pickle file (.pkl) and load it back into the next move.
+  Note that loading large amounts of data is costly.
 
 Using python modules
 --------------------

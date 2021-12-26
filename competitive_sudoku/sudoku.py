@@ -5,6 +5,7 @@
 from typing import List, Tuple, Union
 
 
+
 class Move(object):
     """A Move is a tuple (i, j, value) that represents the action board.put(i, j, value) for a given
     sudoku configuration board."""
@@ -44,16 +45,16 @@ class TabooMove(Move):
 
 class SudokuBoard(object):
     """
-    A simple board class for Sudoku. It supports arbitrary rectangular blocks.
+    A simple board class for Sudoku. It supports arbitrary rectangular regions.
     """
 
     empty = 0  # Empty squares contain the value SudokuBoard.empty
 
     def __init__(self, m: int = 3, n: int = 3):
         """
-        Constructs an empty Sudoku with blocks of size m x n.
-        @param m: The number of rows in a block.
-        @param n: The number of columns in a block.
+        Constructs an empty Sudoku with regions of size m x n.
+        @param m: The number of rows in a region.
+        @param n: The number of columns in a region.
         """
         N = m * n
         self.m = m
@@ -102,6 +103,34 @@ class SudokuBoard(object):
         k = self.rc2f(i, j)
         return self.squares[k]
 
+    def region_width(self):
+        """
+        Gets the number of columns in a region.
+        @return: The number of columns in a region.
+        """
+        return self.n
+
+    def region_height(self):
+        """
+        Gets the number of rows in a region.
+        @return: The number of rows in a region.
+        """
+        return self.m
+
+    def board_width(self):
+        """
+        Gets the number of columns of the board.
+        @return: The number of columns of the board.
+        """
+        return self.N
+
+    def board_height(self):
+        """
+        Gets the number of rows of the board.
+        @return: The number of rows of the board.
+        """
+        return self.N
+
     def __str__(self) -> str:
         """
         Prints the board in a simple textual format. The first line contains the values m and n. Then the contents of
@@ -148,7 +177,7 @@ def print_board(board: SudokuBoard) -> str:
         if i == 0:
             out.write('  ')
             for j in range(N):
-                out.write(f'   {j + 1}  ')
+                out.write(f'   {j}  ')
             out.write('\n')
             for j in range(N):
                 if j % n != 0:
@@ -159,7 +188,7 @@ def print_board(board: SudokuBoard) -> str:
                     out.write('   ╔═════')
             out.write('╗\n')
 
-        # separate blocks horizontally
+        # separate regions horizontally
         if i % m == 0 and i != 0:
             for j in range(N):
                 if j % n != 0:
@@ -171,7 +200,7 @@ def print_board(board: SudokuBoard) -> str:
             out.write('║\n')
 
         # plot values
-        out.write(f'{i + 1:2} ')
+        out.write(f'{i:2} ')
         for j in range(N):
             symbol = print_square(i, j)
             if j % n != 0:
@@ -253,7 +282,8 @@ class GameState(object):
         @param initial_board: A sudoku board. It contains the start position of a game.
         @param board: A sudoku board. It contains the current position of a game.
         @param taboo_moves: A list of taboo moves. Moves in this list cannot be played.
-        @param moves: The history of a sudoku game, starting in initial_board.
+        @param moves: The history of a sudoku game, starting in initial_board. The
+        history includes taboo moves.
         @param scores: The current scores of the first and the second player.
         """
         self.initial_board = initial_board

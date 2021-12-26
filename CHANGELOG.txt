@@ -1,0 +1,26 @@
+Changelog
+---------
+
+version v4:
+- Use player number 1 and 2 instead of 0 and 1.
+
+version v5:
+- Improved the rendering of the boards, by adding borders.
+- The --first and --second arguments of simulate_game.py no longer 
+  require the postfix .sudokuai.
+
+version v6:
+- Fix the file boards/empty-2x3.txt.
+
+version v7:
+- Use zero based indexing of rows and columns in the board rendering.
+- Report the correct winner when a taboo move has been played.
+
+version v8:
+- Added some width and height methods to SudokuBoard.
+- Added a current_player method to GameState.
+
+version v9:
+- Added saving options to the SudokuAI base class
+- Added random_save_player as an example
+- Added automatic removal of the save files before a run is started in simulate_game.py

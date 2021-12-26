@@ -4,6 +4,10 @@
 
 from typing import List
 from competitive_sudoku.sudoku import GameState, Move
+import os
+import pickle
+import math
+from datetime import datetime
 
 
 class SudokuAI(object):
@@ -14,6 +18,7 @@ class SudokuAI(object):
     def __init__(self):
         self.best_move: List[int] = [0, 0, 0]
         self.lock = None
+        self.player_number = -1
 
     def compute_best_move(self, game_state: GameState) -> None:
         """
@@ -38,3 +43,37 @@ class SudokuAI(object):
         self.best_move[2] = value
         if self.lock:
             self.lock.release()
+
+    def save(self, object):
+        if self.lock:
+            self.lock.acquire()
+        save_path = os.path.join(os.getcwd(), '{}.pkl'.format(self.player_number))
+        start_time = datetime.now()
+        with open(save_path, 'wb') as handle:
+            pickle.dump(object, handle)
+            handle.close()
+        end_time = datetime.now()
+        duration =  end_time - start_time
+        print('Saving data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
+        if self.lock:
+            self.lock.release()
+
+
+    def load(self):
+        if self.lock:
+            self.lock.acquire()
+        load_path = os.path.join(os.getcwd(), '{}.pkl'.format(self.player_number))
+        start_time = datetime.now()
+        if not os.path.isfile(load_path):
+            if self.lock:
+                self.lock.release()
+            return None
+        with open(load_path, 'rb') as handle:
+            contents = pickle.load(handle)
+            handle.close()
+            end_time = datetime.now()
+            duration =  end_time - start_time
+            print('Loading data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
+        if self.lock:
+            self.lock.release()
+        return contents

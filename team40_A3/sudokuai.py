@@ -571,12 +571,12 @@ class MonteCarloTreeSearchNode:
         """
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=0.1):
+    def best_child(self, c_param=1):
         """
-        This function chooses which child node is the best, based on the standard MCTS formula.
+        This function chooses which child node is the best, based on the standard UCB formula in MCTS.
         """
         choices_weights = [
-            (c.score() / c.no_visits()) + c_param * np.sqrt((2 * np.log(self.no_visits()) / c.no_visits())) for c in
+            (c.score() / c.no_visits()) + c_param * np.sqrt((np.log(self.no_visits())) / c.no_visits()) for c in
             self.children]
         return self.children[np.argmax(choices_weights)]
 

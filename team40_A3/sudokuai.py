@@ -22,30 +22,44 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def compute_best_move(self, game_state: GameState):
 
-        # here we check whether points can be achieved with the next move
-        # if not and it looks like we are not going to end as the last player, change size by playing taboo move
+        # Propose greediest move
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(game_state)
+        self.propose_move(Move(greediest_move_tuple[0], greediest_move_tuple[1], greediest_move_tuple[2]))
+
+        # If greedy move does not supply points and we are not the last player, try to play a taboo_move
         if len(get_all_empty_squares(game_state.board)) % 2 == 0 and greediest_move_tuple[3] == 0:
-            taboo_moves = get_taboo_moves(game_state.board)
+            taboo_moves = get_taboo_moves(game_state)
             while len(taboo_moves) != 0:
                 taboo_move = random.choice(taboo_moves)
-                if Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]) not in game_state.taboo_moves:
-                    self.propose_move(Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]))
+                if Move(taboo_move.i, taboo_move.j, taboo_move.value) not in game_state.taboo_moves:
+                    print("We propose a switch move: ")
+                    self.propose_move(Move(taboo_move.i, taboo_move.j, taboo_move.value))
                     break
 
-        # make a copy of the game_state so we do not ruin the original.
-        game_state2 = copy.deepcopy(game_state)
-        # Initialize root of the tree
-        root = MonteCarloTreeSearchNode(game_state2, our_player_number=game_state.current_player() - 1)
-        # Perform rollout on a random basis.
-        selected_node = root.best_action()
-        # Propose the best selected move.
-        self.propose_move(selected_node.parent_action)
-        return
+        # If no greedy move and last player: initialize MCTS
+        elif len(get_all_empty_squares(game_state.board)) % 2 == 1 and greediest_move_tuple[3] == 0:
+            print("We propose a MCTS move: ")
+            # make a copy of the game_state so we do not ruin the original.
+            game_state2 = copy.deepcopy(game_state)
+            # Initialize root of the tree
+            root = MonteCarloTreeSearchNode(game_state2, our_player_number=game_state.current_player() - 1)
+            saved_data = self.load()
+            if saved_data:
+                for child in saved_data.children:
+                    for child2 in child.children:
+                        if game_state.moves[-1] == child2.parent_action and child2.parent_action not in game_state.taboo_moves:
+                            root = child2
+                            break
+
+            # Perform rollout on a random basis.
+            while True:
+                selected_node = root.best_action()
+                # Propose the best selected move.
+                self.propose_move(selected_node.parent_action)
+                self.save(root)
 
 
 def possible_allmoves(game_state: GameState):
-    # TODO: Add the functionality that also checks Nikhil's variant of legal moves
     """
     @Param game_state: A GameState item.
     @Return: An array with all possible moves in the Move format (x-coord, y-coord, value).
@@ -110,6 +124,7 @@ def get_taboo_moves(game_state):
                 taboo_moves.append(move)
     return taboo_moves
 
+
 def find_best_candidate_move(dict_of_moves: dict[int: tuple]) -> tuple:
     """ Returns a tuple with coordinates of one of the best moves from the given move dictionary
 
@@ -133,6 +148,7 @@ def get_random_set_element(set_x: set) -> Any:
     set_x.add(elem)
 
     return elem
+
 
 def does_move_complete_row(
         state: GameState,
@@ -171,6 +187,7 @@ def does_move_complete_row(
             is_row_filled = False
 
     return is_row_filled, illegal_numbers_set
+
 
 def does_move_complete_subgrid(
         state: GameState,
@@ -225,6 +242,7 @@ def does_move_complete_subgrid(
 
     return is_subgrid_filled, illegal_numbers_set
 
+
 def does_move_complete_column(
         state: GameState,
         i: int,
@@ -262,6 +280,23 @@ def does_move_complete_column(
             is_col_filled = False
 
     return is_col_filled, illegal_numbers_set
+
+
+def get_legal_move_list_from_dict(legal_move_dict: dict) -> list:
+    """ Return a sorted-by-score list of moves from the given dict of legal moves with scores
+
+    :param legal_move_dict: dictionary with scores as index and move tuples as values
+    :return:
+    """
+    move_list = []
+    # find the highest scoring move possible from the given dict
+    # and add it to the list
+    for index in range(3, -1, -1):
+        if legal_move_dict[f"score{index}"]:
+            for move in legal_move_dict[f"score{index}"]:
+                move_list.append(move)
+    return move_list
+
 
 def get_legal_moves(state: GameState, return_type: str) \
         -> Union[dict, list]:
@@ -353,6 +388,7 @@ def get_legal_moves(state: GameState, return_type: str) \
     elif return_type == "list":
         return get_legal_move_list_from_dict(best_move_dict)
 
+
 def compute_greediest_move(state: GameState) -> tuple:
     """ Computes best move according to the greedy player's strategy
 
@@ -363,6 +399,7 @@ def compute_greediest_move(state: GameState) -> tuple:
     best_move_dict = get_legal_moves(state, "dict")
 
     return best_move_dict, find_best_candidate_move(best_move_dict)
+
 
 def check_row_and_column_values(board: SudokuBoard, x, y):
     """
@@ -404,6 +441,7 @@ def check_sub_square_values(board: SudokuBoard, x, y):
         for j in range(s, q + 1):
             sub_matrix_values.append(board.get(i, j))
     return sub_matrix_values
+
 
 def score_eval(board: SudokuBoard, move: Move):
     """
@@ -529,10 +567,29 @@ class MonteCarloTreeSearchNode:
         Expands the tree by selecting a random move to be played on the board and placing it.
         Returns the new child node.
         """
+        # Pick a random action
         action = random.choice(self._untried_actions)
         next_state = update_board(self.state, action)
+
+        # Remove action from the list
+        untried = self._untried_actions
+        untried.remove(action)
+
+        # Make new child node
         child_node = MonteCarloTreeSearchNode(next_state, parent=self, parent_action=action)
         self.children.append(child_node)
+
+        # Choose another action and make a node out of it
+        if untried:
+            action1 = random.choice(untried)
+            next_state1 = update_board(self.state, action1)
+            child_node1 = MonteCarloTreeSearchNode(next_state1, parent=self, parent_action=action1)
+
+            # Remove that action as well and update the untried_actions list
+            untried.remove(action1)
+            self._untried_actions = untried
+            self.children.append(child_node1)
+
         return child_node
 
     def is_terminal_node(self):
@@ -571,13 +628,20 @@ class MonteCarloTreeSearchNode:
         """
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=0.1):
+    def best_child(self, c_param=1.0):
         """
-        This function chooses which child node is the best, based on the standard MCTS formula.
+        This function chooses which child node is the best, based on the standard UCB formula in MCTS.
         """
-        choices_weights = [
-            (c.score() / c.no_visits()) + c_param * np.sqrt((2 * np.log(self.no_visits()) / c.no_visits())) for c in
-            self.children]
+        choices_weights = []
+        for c in self.children:
+            if c.no_visits() == 0:
+                if c.score() > 0:
+                    choices_weights = math.inf
+                else:
+                    choices_weights = -math.inf
+            else:
+                choices_weights = (c.score() / c.no_visits()) + c_param * np.sqrt(
+                    (np.log(self.no_visits())) / c.no_visits())
         return self.children[np.argmax(choices_weights)]
 
     def rollout_policy(self, possible_moves):
@@ -606,7 +670,7 @@ class MonteCarloTreeSearchNode:
         After that it performs the rollout, followed by the backpropagation.
         Change simulation_no to change the random sample size.
         """
-        simulation_no = 100
+        simulation_no = 5
         for i in range(simulation_no):
             v = self._tree_policy()
             reward = v.rollout()

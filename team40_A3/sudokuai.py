@@ -23,7 +23,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     def compute_best_move(self, game_state: GameState) -> None:
 
         def possible_allmoves(game_state: GameState):
-            # TODO: Add the functionality that also checks Nikhil's variant of legal moves
             """
             @Param game_state: A GameState item.
             @Return: An array with all possible moves in the Move format (x-coord, y-coord, value).
@@ -603,7 +602,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # if not and it looks like we are not going to end as the last player, change size by playing taboo move
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(game_state)
         if len(get_all_empty_squares(game_state.board)) % 2 == 0 and greediest_move_tuple[3] == 0:
-            taboo_moves = get_taboo_moves(game_state.board)
+            taboo_moves = get_taboo_moves(game_state)
             while len(taboo_moves) != 0:
                 taboo_move = random.choice(taboo_moves)
                 if Move(taboo_move[0][0], taboo_move[0][1], taboo_move[1]) not in game_state.taboo_moves:

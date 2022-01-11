@@ -254,6 +254,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             return move_list
 
+        def create_move_from_tuple(move_tuple: tuple):
+            """ Wrapper to create a Move object from the tuple representation
+
+            :param move_tuple: tuple with i coordinate at position 0,
+             j coordinate at position 1 and its value at index 2
+            :return: Move object created from the tuple
+            """
+            return Move(move_tuple[0], move_tuple[1], move_tuple[2])
+
         def get_legal_moves(state: GameState, return_type: str) \
                 -> Union[dict, list]:
             """ Returns list or dictionary of legal moves,
@@ -601,6 +610,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # here we check whether points can be achieved with the next move
         # if not and it looks like we are not going to end as the last player, change size by playing taboo move
         legal_moves_dict, greediest_move_tuple = compute_greediest_move(game_state)
+
+        #propose greediest move at start
+        proposed_move = create_move_from_tuple(greediest_move_tuple)
+        self.propose_move(proposed_move)
+
         if len(get_all_empty_squares(game_state.board)) % 2 == 0 and greediest_move_tuple[3] == 0:
             taboo_moves = get_taboo_moves(game_state)
             while len(taboo_moves) != 0:

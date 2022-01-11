@@ -32,13 +32,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             while len(taboo_moves) != 0:
                 taboo_move = random.choice(taboo_moves)
                 if Move(taboo_move.i, taboo_move.j, taboo_move.value) not in game_state.taboo_moves:
-                    print("We propose a switch move: ")
+                    # print("We propose a switch move: ")
                     self.propose_move(Move(taboo_move.i, taboo_move.j, taboo_move.value))
                     break
 
         # If no greedy move and last player: initialize MCTS
         elif len(get_all_empty_squares(game_state.board)) % 2 == 1 and greediest_move_tuple[3] == 0:
-            print("We propose a MCTS move: ")
+            # print("We propose a MCTS move: ")
             # make a copy of the game_state so we do not ruin the original.
             game_state2 = copy.deepcopy(game_state)
             # Initialize root of the tree

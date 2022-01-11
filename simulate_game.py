@@ -10,7 +10,6 @@ import multiprocessing
 import platform
 import re
 import time
-import os
 from pathlib import Path
 from competitive_sudoku.execute import solve_sudoku
 from competitive_sudoku.sudoku import GameState, SudokuBoard, Move, TabooMove, load_sudoku_from_text
@@ -33,7 +32,7 @@ def check_oracle(solve_sudoku_path: str) -> None:
         print(output)
 
 
-def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: SudokuAI, solve_sudoku_path: str, calculation_time: float = 0.5) -> None:
+def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: SudokuAI, solve_sudoku_path: str, calculation_time: float = 0.5):
     """
     Simulates a game between two instances of SudokuAI, starting in initial_board. The first move is played by player1.
     @param initial_board: The initial position of the game.
@@ -48,8 +47,8 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
     game_state = GameState(initial_board, copy.deepcopy(initial_board), [], [], [0, 0])
     move_number = 0
     number_of_moves = initial_board.squares.count(SudokuBoard.empty)
-    print('Initial state')
-    print(game_state)
+    #print('Initial state')
+    # print(game_state)
 
     with multiprocessing.Manager() as manager:
         # use a lock to protect assignments to best_move
@@ -63,7 +62,7 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
 
         while move_number < number_of_moves:
             player, player_number = (player1, 1) if len(game_state.moves) % 2 == 0 else (player2, 2)
-            print(f'-----------------------------\nCalculate a move for player {player_number}')
+            #print(f'-----------------------------\nCalculate a move for player {player_number}')
             player.best_move[0] = 0
             player.best_move[1] = 0
             player.best_move[2] = 0
@@ -78,11 +77,11 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                 print('Error: an exception occurred.\n', err)
             i, j, value = player.best_move
             best_move = Move(i, j, value)
-            print(f'Best move: {best_move}')
+            #print(f'Best move: {best_move}')
             player_score = 0
             if best_move != Move(0, 0, 0):
                 if TabooMove(i, j, value) in game_state.taboo_moves:
-                    print(f'Error: {best_move} is a taboo move. Player {3-player_number} wins the game.')
+                    print(f'Error: {best_move} is a taboo move. Player {2-player_number} wins the game.')
                     return
                 board_text = str(game_state.board)
                 options = f'--move "{game_state.board.rc2f(i, j)} {value}"'
@@ -94,7 +93,7 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                     print(f'Error: {best_move} is not a legal move. Player {3-player_number} wins the game.')
                     return
                 if 'has no solution' in output:
-                    print(f'The sudoku has no solution after the move {best_move}.')
+                    #print(f'The sudoku has no solution after the move {best_move}.')
                     player_score = 0
                     game_state.moves.append(TabooMove(i, j, value))
                     game_state.taboo_moves.append(TabooMove(i, j, value))
@@ -108,17 +107,20 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                     else:
                         raise RuntimeError(f'Unexpected output of sudoku solver: "{output}".')
             else:
-                print(f'No move was supplied. Player {3-player_number} wins the game.')
+                #print(f'No move was supplied. Player {3-player_number} wins the game.')
                 return
             game_state.scores[player_number-1] = game_state.scores[player_number-1] + player_score
-            print(f'Reward: {player_score}')
-            print(game_state)
+            #print(f'Reward: {player_score}')
+            #print(game_state)
         if game_state.scores[0] > game_state.scores[1]:
-            print('Player 1 wins the game.')
+            #print('Player 1 wins the game.')
+            return 1
         elif game_state.scores[0] == game_state.scores[1]:
-            print('The game ends in a draw.')
+            #print('The game ends in a draw.')
+            return 0
         elif game_state.scores[0] < game_state.scores[1]:
-            print('Player 2 wins the game.')
+            #print('Player 2 wins the game.')
+            return 2
 
 
 def main():
@@ -150,23 +152,12 @@ def main():
     module2 = importlib.import_module(args.second + '.sudokuai')
     player1 = module1.SudokuAI()
     player2 = module2.SudokuAI()
-    player1.player_number = 1
-    player2.player_number = 2
-    if args.first in ('random_player', 'greedy_player', 'random_save_player'):
+    if args.first in ('random_player', 'greedy_player'):
         player1.solve_sudoku_path = solve_sudoku_path
-    if args.second in ('random_player', 'greedy_player', 'random_save_player'):
+    if args.second in ('random_player', 'greedy_player'):
         player2.solve_sudoku_path = solve_sudoku_path
 
-    #clean up files
-    if os.path.isfile(os.path.join(os.getcwd(), '-1.pkl')): #Check if there actually is something
-        os.remove(os.path.join(os.getcwd(), '-1.pkl'))
-    if os.path.isfile(os.path.join(os.getcwd(), '1.pkl')): #Check if there actually is something
-        os.remove(os.path.join(os.getcwd(), '1.pkl'))
-    if os.path.isfile(os.path.join(os.getcwd(), '2.pkl')): #Check if there actually is something
-        os.remove(os.path.join(os.getcwd(), '2.pkl'))
-
     simulate_game(board, player1, player2, solve_sudoku_path=solve_sudoku_path, calculation_time=args.time)
-
 
 
 if __name__ == '__main__':

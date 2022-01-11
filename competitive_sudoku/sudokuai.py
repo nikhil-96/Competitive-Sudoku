@@ -54,7 +54,7 @@ class SudokuAI(object):
             handle.close()
         end_time = datetime.now()
         duration =  end_time - start_time
-        print('Saving data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
+        # print('Saving data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
         if self.lock:
             self.lock.release()
 
@@ -73,7 +73,7 @@ class SudokuAI(object):
             handle.close()
             end_time = datetime.now()
             duration =  end_time - start_time
-            print('Loading data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
+            # print('Loading data took {} seconds and {} milliseconds'.format(math.floor(duration.total_seconds()), round(duration.microseconds/1000)))
         if self.lock:
             self.lock.release()
         return contents

@@ -59,7 +59,7 @@ def main():
     # board_list = ['boards\\easy-2x2.txt', 'boards\\easy-3x3.txt', 'boards\\empty-2x2.txt', 'boards\\empty-2x3.txt',
     #               'boards\\empty-3x4.txt', 'boards\\empty-4x4.txt', 'boards\\hard-3x3.txt', 'boards\\random-2x3.txt',
     #               'boards\\random-3x3.txt', 'boards\\random-3x4.txt', 'boards\\random-4x4.txt']
-    board_list = ['boards\\random-2x3.txt']
+    board_list = ['boards\\random-3x3.txt']
 
     calculation_time = [0.5, 1]
 
@@ -68,8 +68,8 @@ def main():
         board = load_sudoku_from_text(board_text)
 
         for timey in calculation_time:
-            tester('team40_A2.sudokuai', 'greedy_player.sudokuai', True, board, boardy, timey)
-            tester('greedy_player.sudokuai', 'team40_A2.sudokuai', False, board, boardy, timey)
+            tester('team40_A3.sudokuai', 'greedy_player.sudokuai', True, board, boardy, timey)
+            tester('greedy_player.sudokuai', 'team40_A3.sudokuai', False, board, boardy, timey)
 
 if __name__ == '__main__':
     main()

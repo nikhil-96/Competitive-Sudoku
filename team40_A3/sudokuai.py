@@ -510,7 +510,7 @@ def game_result(game_state: GameState, our_player_number):
     if game_state.scores.index(max_score) == our_player_number:
         return 1
     else:
-        return 0
+        return -1
 
 
 class MonteCarloTreeSearchNode:
@@ -592,11 +592,11 @@ class MonteCarloTreeSearchNode:
 
         return child_node
 
-    def is_terminal_node(self):
+    def is_leaf_node(self):
         """
-        Checks whether the game has ended
+        Checks whether current node is leaf node
         """
-        return is_game_over(self.state.board)
+        return len(self.children) == 0
 
     def rollout(self):
         """
@@ -606,11 +606,11 @@ class MonteCarloTreeSearchNode:
         current_rollout_state = self.state
         possible_moves = possible(current_rollout_state)
         while len(possible_moves) > 0:
-            possible_moves = possible(current_rollout_state)
-            if len(possible_moves) == 0:
-                break
             action = self.rollout_policy(possible_moves)
             current_rollout_state = update_board(current_rollout_state, action)
+            possible_moves = possible(current_rollout_state)
+            # if len(possible_moves) == 0:
+            #     break
         return game_result(current_rollout_state, self.our_player_number)
 
     def backpropagate(self, result):
@@ -628,7 +628,7 @@ class MonteCarloTreeSearchNode:
         """
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=1.0):
+    def best_child(self, c_param=1.4):
         """
         This function chooses which child node is the best, based on the standard UCB formula in MCTS.
         """
@@ -657,11 +657,12 @@ class MonteCarloTreeSearchNode:
         Can also be edited to only consider certain nodes.
         """
         current_node = self
-        while not current_node.is_terminal_node():
+        while not current_node.is_leaf_node():
+            current_node = current_node.best_child()
+
+        if current_node.no_visits() != 0:
             if not current_node.is_fully_expanded():
                 return current_node.expand()
-            else:
-                current_node = current_node.best_child()
         return current_node
 
     def best_action(self):
@@ -676,4 +677,4 @@ class MonteCarloTreeSearchNode:
             reward = v.rollout()
             v.backpropagate(reward)
 
-        return self.best_child(c_param=0.)
+        return self.best_child(c_param=1.4)

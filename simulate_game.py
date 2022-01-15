@@ -47,8 +47,8 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
     game_state = GameState(initial_board, copy.deepcopy(initial_board), [], [], [0, 0])
     move_number = 0
     number_of_moves = initial_board.squares.count(SudokuBoard.empty)
-    #print('Initial state')
-    # print(game_state)
+    print('Initial state')
+    print(game_state)
 
     with multiprocessing.Manager() as manager:
         # use a lock to protect assignments to best_move
@@ -62,7 +62,7 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
 
         while move_number < number_of_moves:
             player, player_number = (player1, 1) if len(game_state.moves) % 2 == 0 else (player2, 2)
-            #print(f'-----------------------------\nCalculate a move for player {player_number}')
+            print(f'-----------------------------\nCalculate a move for player {player_number}')
             player.best_move[0] = 0
             player.best_move[1] = 0
             player.best_move[2] = 0
@@ -77,7 +77,7 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                 print('Error: an exception occurred.\n', err)
             i, j, value = player.best_move
             best_move = Move(i, j, value)
-            #print(f'Best move: {best_move}')
+            print(f'Best move: {best_move}')
             player_score = 0
             if best_move != Move(0, 0, 0):
                 if TabooMove(i, j, value) in game_state.taboo_moves:
@@ -93,7 +93,7 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                     print(f'Error: {best_move} is not a legal move. Player {3-player_number} wins the game.')
                     return
                 if 'has no solution' in output:
-                    #print(f'The sudoku has no solution after the move {best_move}.')
+                    print(f'The sudoku has no solution after the move {best_move}.')
                     player_score = 0
                     game_state.moves.append(TabooMove(i, j, value))
                     game_state.taboo_moves.append(TabooMove(i, j, value))
@@ -107,19 +107,19 @@ def simulate_game(initial_board: SudokuBoard, player1: SudokuAI, player2: Sudoku
                     else:
                         raise RuntimeError(f'Unexpected output of sudoku solver: "{output}".')
             else:
-                #print(f'No move was supplied. Player {3-player_number} wins the game.')
+                print(f'No move was supplied. Player {3-player_number} wins the game.')
                 return
             game_state.scores[player_number-1] = game_state.scores[player_number-1] + player_score
-            #print(f'Reward: {player_score}')
-            #print(game_state)
+            print(f'Reward: {player_score}')
+            print(game_state)
         if game_state.scores[0] > game_state.scores[1]:
-            #print('Player 1 wins the game.')
+            print('Player 1 wins the game.')
             return 1
         elif game_state.scores[0] == game_state.scores[1]:
-            #print('The game ends in a draw.')
+            print('The game ends in a draw.')
             return 0
         elif game_state.scores[0] < game_state.scores[1]:
-            #print('Player 2 wins the game.')
+            print('Player 2 wins the game.')
             return 2
 
 

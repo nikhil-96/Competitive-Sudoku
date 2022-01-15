@@ -3,7 +3,7 @@
 #  https://www.gnu.org/licenses/gpl-3.0.txt)
 
 import random
-from typing import Any, Union, Tuple
+from typing import Any, Union, Tuple, List
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 import copy
@@ -27,8 +27,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             def __init__(
                     self, b: SudokuBoard,
-                    tml: list[TabooMove],
-                    sl: list[int]
+                    tml: List[TabooMove],
+                    sl: List[int]
             ):
                 self.board = b
                 self.taboo_moves = tml
@@ -183,7 +183,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 if dict_of_moves[f"score{index}"]:
                     return random.choice(dict_of_moves[f"score{index}"])
 
-        def get_legal_move_list_from_dict(legal_move_dict: dict) -> list:
+        def get_legal_move_list_from_dict(legal_move_dict: dict) -> List:
             """ Return a sorted-by-score list of moves from the given dict of legal moves with scores
 
             :param legal_move_dict: dictionary with scores as index and move tuples as values
@@ -200,7 +200,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return move_list
 
         def get_legal_moves(state: GameState, return_type: str) \
-                -> Union[dict, list]:
+                -> Union[dict, List]:
             """ Returns list or dictionary of legal moves,
             depending on the requested return_type
 
@@ -326,7 +326,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 t: Union[MiniGameState, GameState],
                 our_agent: bool,
                 our_player_number: int
-        ) -> list[MiniGameState]:
+        ) -> List[MiniGameState]:
             """ Returns list of possible child states of the given game state
 
             :param t: current game state as MiniGameState object

@@ -9,7 +9,7 @@ import competitive_sudoku.sudokuai
 import numpy as np
 from collections import defaultdict
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
-from typing import Any, Union, Tuple
+from typing import Any, Union, Tuple, List
 
 
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
@@ -43,20 +43,21 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             game_state2 = copy.deepcopy(game_state)
             # Initialize root of the tree
             root = MonteCarloTreeSearchNode(game_state2, our_player_number=game_state.current_player() - 1)
-            saved_data = self.load()
-            if saved_data:
-                for child in saved_data.children:
-                    for child2 in child.children:
-                        if game_state.moves[-1] == child2.parent_action and child2.parent_action not in game_state.taboo_moves:
-                            root = child2
-                            break
+            # saved_data = self.load()
+            # if saved_data:
+            #     for child in saved_data.children:
+            #         if len(child.children) != 0:
+            #             for child2 in child.children:
+            #                 if game_state.moves[-1] == child2.parent_action and child2.parent_action not in game_state.taboo_moves:
+            #                     root = child2
+            #                     break
 
             # Perform rollout on a random basis.
             while True:
                 selected_node = root.best_action()
                 # Propose the best selected move.
                 self.propose_move(selected_node.parent_action)
-                self.save(root)
+                # self.save(root)
 
 
 def possible_allmoves(game_state: GameState):
@@ -282,7 +283,7 @@ def does_move_complete_column(
     return is_col_filled, illegal_numbers_set
 
 
-def get_legal_move_list_from_dict(legal_move_dict: dict) -> list:
+def get_legal_move_list_from_dict(legal_move_dict: dict) -> List:
     """ Return a sorted-by-score list of moves from the given dict of legal moves with scores
 
     :param legal_move_dict: dictionary with scores as index and move tuples as values
@@ -299,7 +300,7 @@ def get_legal_move_list_from_dict(legal_move_dict: dict) -> list:
 
 
 def get_legal_moves(state: GameState, return_type: str) \
-        -> Union[dict, list]:
+        -> Union[dict, List]:
     """ Returns list or dictionary of legal moves,
     depending on the requested return_type
 
